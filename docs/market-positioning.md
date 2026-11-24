@@ -40,7 +40,7 @@ could become a useful product advantage if users repeatedly choose it.
 - Up to 100 prompts / 60,000 characters per compilation and 20 active compilations per owner.
 - Gemini quotas still apply; cooldown and bounded retries absorb temporary failures.
 - Render Free sleeps after idle time, so jobs resume when the service wakes. No always-on guarantee.
-- Supabase's default email sender is suitable for project-team testing; public onboarding needs an approved email delivery setup.
+- Resend SMTP is connected for sign-in email from the verified sender domain; Resend quotas still apply.
 - Browser-only drafts and unsynced work are not yet durable cloud records. The UI distinguishes syncing from saved online.
 
 Sources: [Gemini quotas](https://aistudio.google.com/docs/rate-limits),

@@ -28,8 +28,11 @@ The SQL was applied through the dashboard; it has not been registered in the
 Supabase CLI migration ledger. Reconcile the ledger before using CLI migrations.
 The Netlify frontend supports local exploration and a signed-in cloud workspace.
 Email magic links use Supabase Auth with PKCE; SDK code is bundled locally with esbuild.
-The default Supabase email service only delivers to project team addresses (2 emails/hour).
-Public onboarding needs a custom SMTP provider; do not disable email verification to bypass this.
+Supabase Auth now uses Resend SMTP from `Kahuron <kahuron@skhart.world>`.
+The dedicated sending-only key is restricted to the verified `skhart.world` domain
+and stored only in Supabase's encrypted SMTP settings. Resend confirmed delivery
+of the owner confirmation email; the confirmation link opened the cloud workspace.
+Provider email quotas still apply. No DNS changes or paid plan upgrades were needed.
 
 Signed-in saves first enter an owner-scoped browser outbox with stable request IDs.
 The outbox delivers writes in order and remains available after reload/offline periods.
@@ -63,7 +66,9 @@ A live database-to-Render-to-Gemini smoke test completed on the first attempt:
 "Kahuron queue connected." The stored model was gemini-3.5-flash-lite and usage
 was 32 total tokens. A clearly named AI connection test conversation is retained
 in the owner workspace. The owner email sign-in link was sent successfully.
-Opening that link and submitting a compilation in the browser remains unverified.
+The Resend confirmation link successfully opened the signed-in cloud workspace.
+Browser testing saved two prompts, queued their compilation, then saved and queued
+a third prompt separately while the first compilation was generating.
 See [market comparison](docs/market-positioning.md) for sourced positioning and limitations.
 
 ## Verification

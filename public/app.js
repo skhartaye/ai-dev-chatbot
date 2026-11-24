@@ -292,7 +292,7 @@ function render() {
       element(
         "h4",
         "",
-        `Compilation ${index + 1} · ${job.promptIds.length} prompts`,
+        `Compilation ${index + 1} · ${job.promptIds.length} prompt${job.promptIds.length === 1 ? "" : "s"}`,
       ),
       element("p", "", jobMessage(job)),
     );
@@ -336,6 +336,7 @@ function render() {
     card.append(time);
     $("#job-list").prepend(card);
   }
+  connectionText();
 }
 function clearError() {
   $("#prompt-error").hidden = true;
