@@ -5,6 +5,13 @@ export const supabase = createClient(
   "sb_publishable_YQXcdbCiQQg7KFdABqsNBw_px6r07_r",
   {
     auth: { flowType: "pkce", detectSessionInUrl: true },
+    global: {
+      fetch: (url, options) =>
+        fetch(url, {
+          ...options,
+          signal: options?.signal || AbortSignal.timeout(20000),
+        }),
+    },
   },
 );
 

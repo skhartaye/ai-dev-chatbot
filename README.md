@@ -59,7 +59,11 @@ Render builds with `npm ci && npm test`, starts with `npm start`; Netlify builds
 Render Free sleeps when idle; it does not guarantee unattended, always-on processing.
 Queued records survive sleep and resume when the app wakes the service. Gemini Free quotas still apply.
 
-End-to-end email login and a live AI answer require the project owner's sign-in.
+A live database-to-Render-to-Gemini smoke test completed on the first attempt:
+"Kahuron queue connected." The stored model was gemini-3.5-flash-lite and usage
+was 32 total tokens. A clearly named AI connection test conversation is retained
+in the owner workspace. The owner email sign-in link was sent successfully.
+Opening that link and submitting a compilation in the browser remains unverified.
 See [market comparison](docs/market-positioning.md) for sourced positioning and limitations.
 
 ## Verification

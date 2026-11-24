@@ -27,6 +27,7 @@ let lastWake = 0;
 let cloudGeneration = 0;
 let deliveryError = "";
 let staleTab = false;
+let sessionLoading = false;
 const sidebar = $(".sidebar");
 const mobileLayout = matchMedia("(max-width: 860px)");
 
@@ -178,6 +179,7 @@ function navigate(id, replace = false) {
   if (user) void refreshCloud();
 }
 function makeConversation(focus = true) {
+  if (sessionLoading) return;
   const c = {
     id: crypto.randomUUID(),
     title: "New conversation",
@@ -346,6 +348,7 @@ $("#search").addEventListener("input", renderNav);
 $("#prompt").addEventListener("input", () => {
   clearError();
   const c = current();
+  if (!c) return;
   c.draft = $("#prompt").value;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persist, 250);
@@ -360,6 +363,10 @@ $("#prompt").addEventListener("keydown", (event) => {
 $("#prompt-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const input = $("#prompt");
+  if (sessionLoading) {
+    announce("Your workspace is loading. Please try again shortly.");
+    return;
+  }
   if (staleTab) {
     announce(
       "This tab has older pending work. Export it and reload before saving.",
@@ -426,6 +433,7 @@ $("#prompt-form").addEventListener("submit", (event) => {
   reveal($("#prompt-list").lastElementChild);
 });
 $("#compile").addEventListener("click", () => {
+  if (sessionLoading) return;
   if (staleTab) {
     announce("Reload this tab before compiling.");
     return;
@@ -777,6 +785,9 @@ async function refreshCloud() {
 async function setSession(session) {
   const next = session?.user || null;
   if (next?.id === user?.id) return;
+  sessionLoading = true;
+  $("#prompt-form").inert = true;
+  $("#connection-note").textContent = "Loading your workspace…";
   cloudGeneration++;
   user = next;
   outbox = [];
@@ -801,6 +812,8 @@ async function setSession(session) {
     mergeOutbox();
     $("#sign-in-dialog").close();
   } else state = load();
+  sessionLoading = false;
+  $("#prompt-form").inert = false;
   if (!state.conversations.length) makeConversation(false);
   else navigate(state.conversations[0].id, true);
   connectionText();
