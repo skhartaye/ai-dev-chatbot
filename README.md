@@ -19,8 +19,15 @@ It makes one request per invocation, with a two-minute deadline.
 
 Provider code, Netlify headers, and a Node backend with a public `/health` endpoint
 are present. Run `npm start` to start the backend and `npm test` for provider tests.
-Authentication, database migrations, the persistent queue, chat API, worker, and
-frontend are not built yet. The existing `multiprint` database must not be used.
+The dedicated Supabase project is `vkpvgpbdnlnngwzttciy`.
+The foundation migration has been applied there: owner-scoped conversations,
+immutable client prompts, queued compilations, and status audit history.
+`supabase/tests/foundation.sql` passed against the live database with fixtures
+rolled back, checking isolation, permissions, retry idempotency, and batch boundaries.
+The SQL was applied through the dashboard; it has not been registered in the
+Supabase CLI migration ledger. Reconcile the ledger before using CLI migrations.
+Authentication UI, chat API, queue worker, and frontend are not built yet.
+The existing `multiprint` database must not be used.
 Render's Free web service sleeps when idle and is not an always-on queue worker.
 
 ## Verification
