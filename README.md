@@ -44,6 +44,8 @@ Compiling freezes the selected prompt IDs, up to 100 prompts / 60,000 characters
 Up to 20 active compilations per user are allowed. Additional prompts go into the next batch.
 A Render worker claims one job globally with a four-minute lease, six-second start pacing,
 and bounded exponential backoff for temporary failures (eight attempts before manual retry).
+Transient-service retries use 5–60 seconds with jitter; quota retries use 60–3600
+seconds and always honor a longer provider Retry-After (up to 24 hours).
 Expired leases recover on restart; lease tokens prevent stale workers overwriting results.
 Prior completed answers provide conversation context, capped at 200,000 input characters;
 this is an application bound, not a promise about provider token limits. Partial answers are rejected.

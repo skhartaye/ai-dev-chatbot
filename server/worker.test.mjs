@@ -8,6 +8,22 @@ test("backoff respects quota delay, bounds retries, and distinguishes permanent 
     { code: "rate_limit", delay: 120, retryable: true },
   );
   assert.equal(retryPlan({ name: "TimeoutError" }, 2).retryable, true);
+  assert.equal(
+    retryPlan({ status: 503, retryable: true }, 1, 0, () => 0).delay,
+    5,
+  );
+  assert.equal(
+    retryPlan({ status: 503, retryable: true }, 7, 0, () => 0.9).delay,
+    60,
+  );
+  assert.equal(
+    retryPlan({ status: 503, retryable: true }, 2, 0, () => 0.9).delay,
+    11,
+  );
+  assert.equal(
+    retryPlan({ status: 429, retryable: true }, 7, 0, () => 0).delay,
+    3600,
+  );
   assert.equal(retryPlan({ status: 400 }, 2).retryable, false);
   assert.equal(retryPlan({ code: "context_limit" }, 1).code, "context_limit");
   assert.equal(

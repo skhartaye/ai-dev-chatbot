@@ -1,6 +1,11 @@
 import { generateAnswer } from "./gemini.mjs";
 
-export function retryPlan(error, attempts, now = Date.now()) {
+export function retryPlan(
+  error,
+  attempts,
+  now = Date.now(),
+  random = Math.random,
+) {
   const retryable =
     error.retryable ||
     ["TypeError", "TimeoutError", "AbortError"].includes(error.name);
@@ -15,13 +20,16 @@ export function retryPlan(error, attempts, now = Date.now()) {
   let retryAfter = Number(error.retryAfter);
   if (!Number.isFinite(retryAfter))
     retryAfter = (Date.parse(error.retryAfter) - now) / 1000;
+  const quota = error.status === 429;
+  const cap = quota ? 3600 : 60;
+  const backoff = Math.min(
+    cap,
+    (quota ? 60 : 5) * 2 ** Math.min(Math.max(attempts - 1, 0), 8),
+  );
+  const jitter = Math.floor(random() * Math.min(5, backoff * 0.2));
   const delay = Math.min(
     86400,
-    Math.max(
-      error.status === 429 ? 60 : 10,
-      retryAfter || 0,
-      15 * 2 ** Math.min(attempts, 8),
-    ),
+    Math.max(retryAfter || 0, Math.min(cap, backoff + jitter)),
   );
   return { code, delay: Math.ceil(delay), retryable: Boolean(retryable) };
 }

@@ -26,7 +26,7 @@ export async function generateAnswer(prompts, { apiKey = process.env.GEMINI_API_
     // Do not propagate provider response bodies, which can contain sensitive details.
     const error = new Error(`Gemini request failed (HTTP ${response.status}).`);
     error.status = response.status;
-    error.retryable = response.status === 429 || response.status >= 500;
+    error.retryable = response.status === 408 || response.status === 429 || response.status >= 500;
     error.retryAfter = response.headers.get('retry-after');
     throw error;
   }
