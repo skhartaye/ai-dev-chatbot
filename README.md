@@ -60,4 +60,3 @@ desktop. Compilation opens as a bottom sheet on mobile and a side sheet on deskt
 Chrome checks confirmed no horizontal overflow at 320, 390, 768, and 1440 pixels,
 visible save controls at a simulated 390x360 keyboard viewport, and draft persistence
 when switching conversations. A physical mobile keyboard has not been tested.
-
