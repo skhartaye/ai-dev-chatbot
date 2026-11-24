@@ -68,7 +68,11 @@ was 32 total tokens. A clearly named AI connection test conversation is retained
 in the owner workspace. The owner email sign-in link was sent successfully.
 The Resend confirmation link successfully opened the signed-in cloud workspace.
 Browser testing saved two prompts, queued their compilation, then saved and queued
-a third prompt separately while the first compilation was generating.
+a third prompt separately while the first compilation was generating. A short
+browser-submitted compilation completed with "Browser queue verified." Larger batches
+encountered temporary provider failures and remained in the durable retry queue.
+Render build filters include `server/**`, `tests/**`, and `package*.json`, so UI-only
+changes do not restart the worker.
 See [market comparison](docs/market-positioning.md) for sourced positioning and limitations.
 
 ## Verification
