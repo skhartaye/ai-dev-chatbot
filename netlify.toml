@@ -1,4 +1,6 @@
-# Frontend build command and publish directory will be set when the app is added.
+[build]
+  publish = "public"
+
 # The API and background worker are hosted separately on Render.
 
 [[headers]]
@@ -6,3 +8,5 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"

@@ -26,10 +26,18 @@ immutable client prompts, queued compilations, and status audit history.
 rolled back, checking isolation, permissions, retry idempotency, and batch boundaries.
 The SQL was applied through the dashboard; it has not been registered in the
 Supabase CLI migration ledger. Reconcile the ledger before using CLI migrations.
-Authentication UI, chat API, queue worker, and frontend are not built yet.
+The Netlify frontend in `public/` is a local-only interface preview. It supports
+conversations, drafts, saved prompts, compilation grouping, JSON export, and
+workflow-state examples. Its sign-in form does not send email. Preview data stays
+in browser storage and is not sent to Supabase or Gemini.
+Live authentication, chat API, and the processing worker are not connected yet.
 The existing `multiprint` database must not be used.
 Render's Free web service sleeps when idle and is not an always-on queue worker.
 
 ## Verification
 
 Run `node --test server/gemini.test.mjs`. Tests use mocked requests and incur no API usage.
+
+Interface checks in Chrome covered prompt saving, reload persistence, fixed
+compilation boundaries, empty-state validation, modal Escape/focus restoration,
+and layouts at 320, 390, 768, 1024 pixels and the normal desktop viewport.

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f6f8fb" />
+    <meta
+      name="description"
+      content="Collect your prompts, keep your train of thought, and compile one considered answer."
+    />
+    <title>Workspace · Kahuron</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#conversation-title">Skip to conversation</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Workspace">
+        <header class="brand-row">
+          <span class="brand" translate="no"
+            >kahuron<span class="brand-period">.</span></span
+          ><span class="workspace-label">WORKSPACE</span>
+        </header>
+        <button class="new-conversation" id="new-conversation" type="button">
+          <span aria-hidden="true">＋</span> New conversation
+        </button>
+        <search>
+          <label class="sr-only" for="search">Search conversations</label
+          ><input
+            type="search"
+            id="search"
+            name="search"
+            autocomplete="off"
+            placeholder="Search conversations…"
+          />
+        </search>
+        <div class="section-label">
+          CONVERSATIONS <span id="conversation-count">0</span>
+        </div>
+        <nav aria-label="Conversations" id="conversation-nav"></nav>
+        <div class="sidebar-bottom">
+          <button class="text-button" id="open-example" type="button">
+            <span aria-hidden="true">▤</span> Explore the workflow
+          </button>
+          <div class="account-row">
+            <span class="avatar" aria-hidden="true">L</span>
+            <div>
+              <strong>Local workspace</strong><span>Saved on this device</span>
+            </div>
+            <button id="sign-in" class="text-button" type="button">
+              Sign in
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="breadcrumbs">
+            Workspace <span aria-hidden="true">/</span>
+            <span id="breadcrumb-title">New conversation</span>
+          </div>
+          <span class="preview-badge">Local preview</span>
+        </header>
+        <div class="work-area">
+          <section class="conversation">
+            <header class="conversation-header">
+              <div>
+                <div class="eyebrow">YOUR THINKING SPACE</div>
+                <h1 id="conversation-title" tabindex="-1">New conversation</h1>
+              </div>
+              <button
+                type="button"
+                class="icon-button"
+                id="export"
+                aria-label="Export conversation"
+                title="Export conversation"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" />
+                </svg>
+              </button>
+            </header>
+
+            <div id="message-area" class="message-area">
+              <div class="empty-state" id="empty-state">
+                <div class="empty-stack" aria-hidden="true">
+                  <span></span><span></span
+                  ><span
+                    ><svg
+                      viewBox="0 0 32 32"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <path d="m12 9-7 7 7 7m8-14 7 7-7 7m-2-19-4 24" /></svg
+                  ></span>
+                </div>
+                <h2>A little context.<br /><span>A better answer.</span></h2>
+                <p>
+                  Add your thoughts one at a time.<br />Compile them when the
+                  whole picture is ready.
+                </p>
+                <div class="starters">
+                  <button
+                    type="button"
+                    data-starter="Help me plan a feature. The goal is to "
+                  >
+                    <span class="starter-symbol" aria-hidden="true">＋</span
+                    ><strong>Plan a feature</strong
+                    ><span>Turn an idea into a clear next step</span></button
+                  ><button
+                    type="button"
+                    data-starter="Review this code for correctness and simplicity. Here is the context:\n"
+                  >
+                    <span class="starter-symbol code" aria-hidden="true"
+                      >&lt;/&gt;</span
+                    ><strong>Review some code</strong
+                    ><span>Add code, context, and constraints</span>
+                  </button>
+                </div>
+              </div>
+              <ol
+                id="prompt-list"
+                class="prompt-list"
+                aria-label="Saved prompts"
+              ></ol>
+            </div>
+
+            <div class="composer-wrap">
+              <form
+                id="prompt-form"
+                action="/"
+                method="post"
+                aria-labelledby="prompt-label"
+              >
+                <div class="composer">
+                  <label for="prompt" id="prompt-label">Add a prompt</label
+                  ><textarea
+                    id="prompt"
+                    name="prompt"
+                    rows="3"
+                    maxlength="20000"
+                    required
+                    autocomplete="off"
+                    placeholder="Add an idea, a requirement, or one more detail…"
+                    aria-describedby="prompt-error"
+                  ></textarea>
+                  <p id="prompt-error" class="field-error" hidden></p>
+                  <div class="composer-footer">
+                    <span class="shortcut"
+                      ><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to save</span
+                    ><button
+                      type="submit"
+                      class="primary-button"
+                      id="save-prompt"
+                    >
+                      Save prompt <span aria-hidden="true">＋</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+              <p class="local-note">
+                Preview only. Prompts stay in this browser; they aren’t sent to
+                AI.
+              </p>
+            </div>
+          </section>
+
+          <aside class="compilation-panel" aria-labelledby="compile-title">
+            <div class="panel-heading">
+              <h2 id="compile-title">Compilation</h2>
+              <span class="count-badge" id="pending-badge">0</span>
+            </div>
+            <div class="compile-summary">
+              <span class="section-label">NEXT ANSWER</span>
+              <h3 id="compile-summary-title">Your prompts, together.</h3>
+              <p id="compile-summary-text">
+                Save a prompt to start building the context for your answer.
+              </p>
+              <ol
+                class="pending-list"
+                id="pending-list"
+                aria-label="Prompts for next compilation"
+              ></ol>
+              <button
+                type="button"
+                class="compile-button"
+                id="compile"
+                aria-describedby="compile-help"
+              >
+                Compile prompts
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="3" width="10" height="10" rx="2" />
+                  <path d="M7 16h8a2 2 0 0 0 2-2V7" />
+                </svg>
+              </button>
+              <p id="compile-help">
+                Includes prompts saved since your last compilation.
+              </p>
+              <p id="compile-error" class="field-error" hidden></p>
+            </div>
+            <div class="history-heading">
+              <h3>Previous compilations</h3>
+              <span id="job-count">0</span>
+            </div>
+            <div id="job-list" class="job-list"></div>
+            <div id="no-jobs" class="no-jobs">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d="M8 3h8l5 5v13H3V3h5m8 0v6h5M7 13h10M7 17h7" />
+              </svg>
+              <p>No compilations yet</p>
+            </div>
+            <div class="model-note">
+              <span class="section-label">SELECTED MODEL</span
+              ><strong>Gemini 3.5 Flash Lite</strong
+              ><span>Free tier · Not connected in this preview</span>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status" aria-atomic="true"></div>
+    <noscript
+      ><div class="noscript">
+        Enable JavaScript to use this local interface preview.
+      </div></noscript
+    >
+
+    <dialog id="sign-in-dialog" aria-labelledby="sign-in-title">
+      <button
+        class="dialog-close icon-button"
+        type="button"
+        data-close="sign-in-dialog"
+        aria-label="Close sign in"
+      >
+        ×</button
+      ><span class="eyebrow">YOUR WORK, IN ONE PLACE</span>
+      <h2 id="sign-in-title">Pick up where<br />you left off.</h2>
+      <p>Sign in to keep your conversations across devices.</p>
+      <form id="sign-in-form" action="/" method="post">
+        <label for="email">Email address</label
+        ><input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          spellcheck="false"
+          autocapitalize="none"
+          required
+          placeholder="you@example.com"
+        /><button class="primary-button" type="submit">
+          Continue with email
+        </button>
+        <p id="sign-in-feedback" class="field-error" role="status">
+          Sign-in preview. No email will be sent.
+        </p>
+      </form>
+      <button class="text-button" type="button" data-close="sign-in-dialog">
+        Keep exploring the preview
+      </button>
+    </dialog>
+
+    <dialog id="example-dialog" aria-labelledby="example-title">
+      <button
+        class="dialog-close icon-button"
+        type="button"
+        data-close="example-dialog"
+        aria-label="Close workflow example"
+      >
+        ×</button
+      ><span class="eyebrow">WORKFLOW EXAMPLE</span>
+      <h2 id="example-title">Think freely.<br />Compile deliberately.</h2>
+      <p>
+        This is an example of the connected workflow, not a live AI response.
+      </p>
+      <div class="example-stages" aria-label="Example states">
+        <button type="button" data-stage="queued" aria-pressed="true">
+          Queued</button
+        ><button type="button" data-stage="processing" aria-pressed="false">
+          Processing</button
+        ><button type="button" data-stage="complete" aria-pressed="false">
+          Complete</button
+        ><button type="button" data-stage="error" aria-pressed="false">
+          Error
+        </button>
+      </div>
+      <div id="example-output" class="example-output" aria-live="polite"></div>
+    </dialog>
+  </body>
+</html>
