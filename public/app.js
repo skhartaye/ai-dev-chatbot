@@ -1,4 +1,11 @@
 import { reveal } from "./motion.js";
+import {
+  supabase,
+  rpc,
+  listConversations,
+  loadConversation,
+  wakeWorker,
+} from "./cloud.js";
 
 const STORAGE_KEY = "kahuron.preview.v1";
 const $ = (selector) => document.querySelector(selector);
@@ -11,6 +18,15 @@ let storageError = "";
 let state = load();
 let saveTimer;
 let toastTimer;
+let user = null;
+let outbox = [];
+let drafts = {};
+let flushing = false;
+let refreshing = false;
+let lastWake = 0;
+let cloudGeneration = 0;
+let deliveryError = "";
+let staleTab = false;
 const sidebar = $(".sidebar");
 const mobileLayout = matchMedia("(max-width: 860px)");
 
@@ -102,6 +118,21 @@ function load() {
   }
 }
 function persist() {
+  if (user) {
+    if (staleTab) return false;
+    try {
+      for (const c of state.conversations) drafts[c.id] = c.draft;
+      localStorage.setItem(
+        `kahuron.delivery.${user.id}`,
+        JSON.stringify(outbox),
+      );
+      localStorage.setItem(`kahuron.drafts.${user.id}`, JSON.stringify(drafts));
+      return true;
+    } catch {
+      announce("Browser storage is full. Export your work before leaving.");
+      return false;
+    }
+  }
   if (storageError) {
     announce(storageError);
     return false;
@@ -144,6 +175,7 @@ function navigate(id, replace = false) {
   url.searchParams.set("conversation", id);
   history[replace ? "replaceState" : "pushState"]({}, "", url);
   render();
+  if (user) void refreshCloud();
 }
 function makeConversation(focus = true) {
   const c = {
@@ -189,7 +221,8 @@ function render() {
   if (!c) return;
   document.title = `${c.title} · Kahuron`;
   $("#conversation-title").textContent = c.title;
-  $("#prompt").value = c.draft;
+  if (document.activeElement !== $("#prompt") || $("#prompt").value !== c.draft)
+    $("#prompt").value = c.draft;
   clearError();
   renderNav();
   $("#empty-state").hidden = c.prompts.length > 0;
@@ -214,11 +247,17 @@ function render() {
       element(
         "span",
         `prompt-tag${isPending ? "" : " assigned"}`,
-        isPending ? "Next compilation" : "Included in compilation",
+        p.syncing
+          ? "Saving…"
+          : isPending
+            ? "Next compilation"
+            : "Included in compilation",
       ),
     );
     item.append(top, element("p", "prompt-content", p.content));
     list.append(item);
+    for (const job of c.jobs.filter((j) => j.promptIds.at(-1) === p.id))
+      list.append(answerCard(job, c.jobs.indexOf(job)));
   }
   $("#pending-badge").textContent = unassigned.length;
   $("#pending-open-count").textContent = unassigned.length;
@@ -247,18 +286,49 @@ function render() {
   for (const [index, job] of c.jobs.entries()) {
     const card = element("article", "job-card");
     card.append(
-      element("span", "job-status", "Waiting for connection"),
+      element("span", "job-status", jobLabel(job)),
       element(
         "h4",
         "",
-        `Compilation ${index + 1} · ${job.promptIds.length} prompt${job.promptIds.length === 1 ? "" : "s"}`,
+        `Compilation ${index + 1} · ${job.promptIds.length} prompts`,
       ),
-      element(
-        "p",
-        "",
-        "AI processing is not connected yet. These prompts are saved in this browser.",
-      ),
+      element("p", "", jobMessage(job)),
     );
+    if (job.status === "failed") {
+      const retry = element("button", "text-button", "Retry compilation");
+      retry.type = "button";
+      retry.addEventListener("click", async () => {
+        retry.disabled = true;
+        try {
+          await rpc("retry_compilation", { p_id: job.id });
+          await refreshCloud();
+          void wake();
+        } catch (error) {
+          announce(error.message);
+        } finally {
+          retry.disabled = false;
+        }
+      });
+      card.append(retry);
+    }
+    if (job.status === "syncing" && deliveryError && !flushing) {
+      const recover = element(
+        "button",
+        "text-button",
+        "Keep prompts uncompiled",
+      );
+      recover.type = "button";
+      recover.addEventListener("click", () => {
+        outbox = outbox.filter((action) => action.job?.id !== job.id);
+        c.jobs = c.jobs.filter((item) => item.id !== job.id);
+        persist();
+        deliveryError = "";
+        render();
+        connectionText();
+        void flushOutbox();
+      });
+      card.append(recover);
+    }
     const time = element("time", "", formatTime(job.createdAt));
     time.dateTime = new Date(job.createdAt).toISOString();
     card.append(time);
@@ -290,6 +360,12 @@ $("#prompt").addEventListener("keydown", (event) => {
 $("#prompt-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const input = $("#prompt");
+  if (staleTab) {
+    announce(
+      "This tab has older pending work. Export it and reload before saving.",
+    );
+    return;
+  }
   const text = input.value.trim();
   if (!text) {
     $("#prompt-error").textContent = "Add some text before saving your prompt.";
@@ -299,22 +375,61 @@ $("#prompt-form").addEventListener("submit", (event) => {
     return;
   }
   const c = current();
-  c.prompts.push({
+  if (
+    user &&
+    (pending(c).length >= 100 ||
+      pending(c).reduce((n, p) => n + Array.from(p.content).length, 0) +
+        Array.from(text).length >
+        60000)
+  ) {
+    $("#prompt-error").textContent =
+      "Compile your saved prompts first. Each batch supports 100 prompts and 60,000 characters.";
+    $("#prompt-error").hidden = false;
+    input.setAttribute("aria-invalid", "true");
+    return;
+  }
+  const prompt = {
     id: crypto.randomUUID(),
     content: text,
     createdAt: Date.now(),
-  });
+    syncing: Boolean(user),
+  };
+  if (user)
+    outbox.push({
+      type: "prompt",
+      conversationId: c.id,
+      title: c.prompts.length
+        ? c.title
+        : Array.from(text).slice(0, 48).join(""),
+      prompt,
+    });
+  c.prompts.push(prompt);
   c.draft = "";
   if (c.prompts.length === 1) c.title = Array.from(text).slice(0, 48).join("");
   clearTimeout(saveTimer);
   const saved = persist();
+  if (!saved) {
+    c.prompts.pop();
+    c.draft = text;
+    if (user) outbox.pop();
+  }
   render();
   input.focus();
-  if (saved) announce("Prompt saved in this browser.");
+  if (saved)
+    announce(
+      user
+        ? "Prompt saved. Syncing to your workspace…"
+        : "Prompt saved in this browser.",
+    );
+  if (user && saved) void flushOutbox();
   $("#prompt-list").lastElementChild?.scrollIntoView({ block: "nearest" });
   reveal($("#prompt-list").lastElementChild);
 });
 $("#compile").addEventListener("click", () => {
+  if (staleTab) {
+    announce("Reload this tab before compiling.");
+    return;
+  }
   const c = current();
   const prompts = pending(c);
   if (!prompts.length) {
@@ -325,16 +440,32 @@ $("#compile").addEventListener("click", () => {
     $("#prompt").focus();
     return;
   }
+  if (!user) {
+    $("#compilation-dialog").close();
+    $("#sign-in-dialog").showModal();
+    $("#sign-in-feedback").textContent =
+      "Sign in to save your queue and generate answers. Your local prompts stay on this device.";
+    return;
+  }
   const job = {
     id: crypto.randomUUID(),
     promptIds: prompts.map((p) => p.id),
     createdAt: Date.now(),
+    status: "syncing",
   };
+  outbox.push({ type: "compile", conversationId: c.id, title: c.title, job });
   c.jobs.push(job);
-  persist();
+  const saved = persist();
+  if (!saved) {
+    outbox.pop();
+    c.jobs.pop();
+  }
   render();
   reveal($("#job-list").firstElementChild);
-  announce("Compilation saved locally. AI processing will be connected next.");
+  if (saved) {
+    void flushOutbox();
+    announce("Compilation queued. You can keep adding prompts.");
+  }
 });
 for (const button of document.querySelectorAll("[data-starter]"))
   button.addEventListener("click", () => {
@@ -348,7 +479,7 @@ for (const button of document.querySelectorAll("[data-starter]"))
 $("#export").addEventListener("click", () => {
   const c = current();
   const blob = new Blob(
-    [JSON.stringify({ preview: true, conversation: c }, null, 2)],
+    [JSON.stringify({ localOnly: !user, conversation: c }, null, 2)],
     { type: "application/json" },
   );
   const url = URL.createObjectURL(blob);
@@ -361,12 +492,36 @@ $("#export").addEventListener("click", () => {
 });
 $("#sign-in").addEventListener("click", () => {
   $("#nav-dialog").close();
-  $("#sign-in-dialog").showModal();
+  if (user) {
+    if (outbox.length) {
+      announce("Wait for pending work to sync before signing out.");
+      return;
+    }
+    void supabase.auth.signOut().then(({ error }) => {
+      if (error) announce("Could not sign out. Please try again.");
+    });
+  } else $("#sign-in-dialog").showModal();
 });
-$("#sign-in-form").addEventListener("submit", (event) => {
+$("#sign-in-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  $("#sign-in-feedback").textContent =
-    "Email sign-in is not connected yet. No email was sent. You can keep exploring the local preview.";
+  const button = event.currentTarget.querySelector("[type=submit]");
+  button.disabled = true;
+  button.textContent = "Sending…";
+  try {
+    const { error } = await supabase.auth.signInWithOtp({
+      email: $("#email").value.trim(),
+      options: { emailRedirectTo: "https://kahuron.netlify.app/" },
+    });
+    if (error) throw error;
+    $("#sign-in-feedback").textContent =
+      "Check your email for a sign-in link. Open it in this browser to continue.";
+  } catch (error) {
+    $("#sign-in-feedback").textContent =
+      error.message || "Could not send the link. Please try again.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Send sign-in link";
+  }
 });
 for (const button of document.querySelectorAll("[data-close]"))
   button.addEventListener("click", () =>
@@ -427,6 +582,15 @@ window.addEventListener("beforeunload", (event) => {
   }
 });
 window.addEventListener("storage", (event) => {
+  if (user) {
+    if (event.key === `kahuron.delivery.${user.id}`) {
+      staleTab = true;
+      deliveryError =
+        "Another tab changed your pending work. Reload before saving more prompts.";
+      announce(deliveryError);
+    }
+    return;
+  }
   if (event.key !== STORAGE_KEY) return;
   // Prevent a stale tab from silently overwriting a newer tab's data.
   storageError =
@@ -437,3 +601,226 @@ if (state.conversations.length === 0) makeConversation(false);
 else if (!current()) navigate(state.conversations[0].id, true);
 else render();
 if (storageError) announce(storageError);
+
+function jobLabel(job) {
+  return (
+    {
+      syncing: "Saving compilation…",
+      queued:
+        job.errorCode === "rate_limit" ? "Waiting for AI quota" : "Queued",
+      processing: "Generating answer…",
+      complete: "Complete",
+      failed: "Needs attention",
+    }[job.status] || "Local compilation"
+  );
+}
+function jobMessage(job) {
+  if (job.status === "complete") return "Answer saved in your workspace.";
+  if (job.status === "processing")
+    return "Keep adding prompts. They will go into the next compilation.";
+  if (job.status === "failed")
+    return job.errorCode === "context_limit"
+      ? "This conversation is too long. Start a new conversation with the context you need."
+      : job.errorCode === "output_limit"
+        ? "The answer exceeded the output limit. Start a new conversation with a smaller task. Your prompts are still saved here."
+        : "Your prompts are safe. Retry this compilation when the service is available.";
+  if (job.status === "queued")
+    return job.errorCode
+      ? `Your prompts are saved. Next attempt after ${formatTime(job.availableAt)}.`
+      : "Saved in your workspace. Processing starts when capacity is available.";
+  return "Waiting to sync. Keep this browser open until the compilation is saved online.";
+}
+function answerCard(job, index) {
+  const item = element("li", "answer-card");
+  item.append(
+    element("strong", "answer-heading", `Kahuron · Compilation ${index + 1}`),
+    element("span", "job-status", jobLabel(job)),
+  );
+  if (job.answer) item.append(element("div", "answer-content", job.answer));
+  else item.append(element("p", "", jobMessage(job)));
+  return item;
+}
+function connectionText() {
+  $("#connection-status").textContent = user
+    ? "Cloud workspace"
+    : "Local preview";
+  $("#workspace-name").textContent = user
+    ? "Your workspace"
+    : "Local workspace";
+  $("#workspace-status").textContent = user
+    ? "Saved across devices"
+    : "Saved on this device";
+  $("#sign-in").textContent = user ? "Sign out" : "Sign in";
+  $("#connection-note").textContent = !user
+    ? "Sign in to queue prompts and generate AI answers."
+    : deliveryError ||
+      (outbox.length
+        ? "Syncing saved prompts… Keep this tab open."
+        : "Prompts saved online. Keep adding context while AI works.");
+}
+function mergeOutbox() {
+  for (const action of outbox) {
+    let c = state.conversations.find((c) => c.id === action.conversationId);
+    if (!c) {
+      c = {
+        id: action.conversationId,
+        title: action.title,
+        createdAt: action.prompt?.createdAt || action.job.createdAt,
+        prompts: [],
+        jobs: [],
+        draft: drafts[action.conversationId] || "",
+      };
+      state.conversations.unshift(c);
+    }
+    const list = action.type === "prompt" ? c.prompts : c.jobs;
+    const item = action.prompt || action.job;
+    if (!list.some((p) => p.id === item.id)) list.push(item);
+  }
+}
+async function wake() {
+  if (Date.now() - lastWake < 60000) return;
+  lastWake = Date.now();
+  const awake = await wakeWorker();
+  if (!awake && user)
+    announce(
+      "The worker is waking or unavailable. Your online queue is saved; it will resume when the worker reconnects.",
+    );
+}
+async function flushOutbox() {
+  if (flushing || staleTab || !user || !navigator.onLine) return;
+  flushing = true;
+  const owner = user.id;
+  try {
+    while (outbox.length && user?.id === owner && !staleTab) {
+      const action = outbox[0];
+      if (action.type === "prompt") {
+        await rpc("create_conversation", {
+          p_id: action.conversationId,
+          p_title: action.title,
+        });
+        await rpc("save_prompt", {
+          p_id: action.prompt.id,
+          p_conversation_id: action.conversationId,
+          p_content: action.prompt.content,
+        });
+      } else
+        await rpc("compile_prompts", {
+          p_id: action.job.id,
+          p_conversation_id: action.conversationId,
+          p_prompt_ids: action.job.promptIds,
+        });
+      if (user?.id !== owner || staleTab) break;
+      outbox.shift();
+      persist();
+      deliveryError = "";
+    }
+  } catch (error) {
+    deliveryError = `Not synced: ${error.message} Reconnect or reload to retry. Your pending work remains on this device.`;
+    announce(deliveryError);
+  } finally {
+    flushing = false;
+    connectionText();
+    if (user?.id === owner) {
+      await refreshCloud();
+      if (deliveryError && current()) render();
+      if (
+        state.conversations.some((c) =>
+          c.jobs.some((j) => ["queued", "processing"].includes(j.status)),
+        )
+      )
+        void wake();
+    }
+  }
+}
+async function refreshCloud() {
+  if (!user || refreshing) return;
+  refreshing = true;
+  const generation = cloudGeneration;
+  const selected = current();
+  try {
+    const conversations = await listConversations();
+    if (generation !== cloudGeneration) return;
+    for (const remote of conversations) {
+      const existing = state.conversations.find((c) => c.id === remote.id);
+      if (existing) {
+        existing.title = remote.title;
+      } else {
+        remote.draft = drafts[remote.id] || "";
+        state.conversations.push(remote);
+      }
+    }
+    if (selected) {
+      const remote = await loadConversation(selected.id);
+      if (generation !== cloudGeneration) return;
+      const signature = JSON.stringify([selected.prompts, selected.jobs]);
+      selected.prompts = remote.prompts;
+      selected.jobs = remote.jobs;
+      mergeOutbox();
+      if (
+        current()?.id === selected.id &&
+        signature !== JSON.stringify([selected.prompts, selected.jobs])
+      )
+        render();
+    }
+    renderNav();
+    connectionText();
+  } catch {
+    if (generation === cloudGeneration) {
+      deliveryError =
+        "Connection lost. New prompts stay on this device until sync resumes.";
+      connectionText();
+    }
+  } finally {
+    refreshing = false;
+  }
+}
+async function setSession(session) {
+  const next = session?.user || null;
+  if (next?.id === user?.id) return;
+  cloudGeneration++;
+  user = next;
+  outbox = [];
+  drafts = {};
+  deliveryError = "";
+  if (user) {
+    state = { conversations: [] };
+    try {
+      drafts = JSON.parse(
+        localStorage.getItem(`kahuron.drafts.${user.id}`) || "{}",
+      );
+      outbox = JSON.parse(
+        localStorage.getItem(`kahuron.delivery.${user.id}`) || "[]",
+      );
+      state.conversations = await listConversations();
+      for (const c of state.conversations) c.draft = drafts[c.id] || "";
+      mergeOutbox();
+    } catch {
+      deliveryError =
+        "Could not load your workspace. Reconnect and reload to try again.";
+    }
+    mergeOutbox();
+    $("#sign-in-dialog").close();
+  } else state = load();
+  if (!state.conversations.length) makeConversation(false);
+  else navigate(state.conversations[0].id, true);
+  connectionText();
+  if (user) {
+    void flushOutbox();
+    void wake();
+  }
+}
+supabase.auth.onAuthStateChange((_event, session) => {
+  setTimeout(() => void setSession(session), 0);
+});
+connectionText();
+window.addEventListener("online", () => void flushOutbox());
+setInterval(() => {
+  if (user && !document.hidden) {
+    if (outbox.length) void flushOutbox();
+    else void refreshCloud();
+    if (
+      current()?.jobs.some((j) => ["queued", "processing"].includes(j.status))
+    )
+      void wake();
+  }
+}, 5000);

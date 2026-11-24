@@ -383,8 +383,13 @@ h1 {
   inline-size: 20px;
   block-size: 20px;
 }
-.mobile-only, .drawer-only { display: none; }
-.conversation.is-empty #export { display: none; }
+.mobile-only,
+.drawer-only {
+  display: none;
+}
+.conversation.is-empty #export {
+  display: none;
+}
 .message-area {
   overflow: auto;
   min-block-size: 0;
@@ -1295,8 +1300,48 @@ dialog > .text-button {
   }
 }
 
-.primary-button, .compile-button { color: #14251c; }
+.primary-button,
+.compile-button {
+  color: #14251c;
+}
 @media (forced-colors: active) {
-  :root { --canvas: Canvas; --surface: Canvas; --ink: CanvasText; --muted: CanvasText; --line: ButtonBorder; --accent: Highlight; --error: CanvasText; }
-  .primary-button, .compile-button { color: HighlightText; }
+  :root {
+    --canvas: Canvas;
+    --surface: Canvas;
+    --ink: CanvasText;
+    --muted: CanvasText;
+    --line: ButtonBorder;
+    --accent: Highlight;
+    --error: CanvasText;
+  }
+  .primary-button,
+  .compile-button {
+    color: HighlightText;
+  }
+}
+
+.prompt-list .answer-card {
+  margin-inline: 0 auto;
+  max-inline-size: 100%;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 20px 0 28px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.answer-heading {
+  display: block;
+  margin-block-end: 6px;
+  font-size: 0.875rem;
+}
+.answer-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.85;
+  margin-block-start: 18px;
+}
+.answer-card > p {
+  margin-block-start: 12px;
+  color: var(--muted);
 }

@@ -12,7 +12,7 @@ the model name alone does not guarantee free usage.
 
 `server/gemini.mjs` accepts ordered prompts and returns one complete answer with
 provider token usage. It rejects truncated or blocked answers and exposes
-retryable HTTP failures for a future persistent worker to reschedule.
+retryable HTTP failures for the persistent queue worker to reschedule.
 It makes one request per invocation, with a two-minute deadline.
 
 ## Current status
@@ -26,17 +26,45 @@ immutable client prompts, queued compilations, and status audit history.
 rolled back, checking isolation, permissions, retry idempotency, and batch boundaries.
 The SQL was applied through the dashboard; it has not been registered in the
 Supabase CLI migration ledger. Reconcile the ledger before using CLI migrations.
-The Netlify frontend in `public/` is a local-only interface preview. It supports
-conversations, drafts, saved prompts, compilation grouping, JSON export, and
-workflow-state examples. Its sign-in form does not send email. Preview data stays
-in browser storage and is not sent to Supabase or Gemini.
-Live authentication, chat API, and the processing worker are not connected yet.
+The Netlify frontend supports local exploration and a signed-in cloud workspace.
+Email magic links use Supabase Auth with PKCE; SDK code is bundled locally with esbuild.
+The default Supabase email service only delivers to project team addresses (2 emails/hour).
+Public onboarding needs a custom SMTP provider; do not disable email verification to bypass this.
+
+Signed-in saves first enter an owner-scoped browser outbox with stable request IDs.
+The outbox delivers writes in order and remains available after reload/offline periods.
+Once acknowledged, prompts and job status are read from Supabase, the source of truth.
+The browser keeps drafts and unacknowledged delivery intentions, not a second cloud database.
+Local preview history remains separate and is never uploaded automatically.
+
+Compiling freezes the selected prompt IDs, up to 100 prompts / 60,000 characters.
+Up to 20 active compilations per user are allowed. Additional prompts go into the next batch.
+A Render worker claims one job globally with a four-minute lease, six-second start pacing,
+and bounded exponential backoff for temporary failures (eight attempts before manual retry).
+Expired leases recover on restart; lease tokens prevent stale workers overwriting results.
+Prior completed answers provide conversation context, capped at 200,000 input characters;
+this is an application bound, not a promise about provider token limits. Partial answers are rejected.
+
+Both migrations have been applied to the dedicated project. `supabase/tests/queue.sql`
+passed with fixtures rolled back: fixed membership, restricted claiming, single claim,
+lease recovery, stale lease denial, quota cooldown, completion, and audit history.
+Migrations were applied through the dashboard; reconcile the CLI ledger before CLI migrations.
 The existing `multiprint` database must not be used.
-Render's Free web service sleeps when idle and is not an always-on queue worker.
+
+Render server variables: `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
+The server credential never belongs in frontend variables. The frontend publishable key is
+public by design and all data access is protected by RLS and ownership-checked RPC functions.
+Render builds with `npm ci && npm test`, starts with `npm start`; Netlify builds with `npm run build`.
+`POST /wake` requires a valid Supabase session and the configured application origin.
+Render Free sleeps when idle; it does not guarantee unattended, always-on processing.
+Queued records survive sleep and resume when the app wakes the service. Gemini Free quotas still apply.
+
+End-to-end email login and a live AI answer require the project owner's sign-in.
+See [market comparison](docs/market-positioning.md) for sourced positioning and limitations.
 
 ## Verification
 
-Run `node --test server/gemini.test.mjs`. Tests use mocked requests and incur no API usage.
+Run `npm test` (seven checks) and `npm run build`. Tests use mocked provider requests and incur no API usage.
 
 Interface checks in Chrome covered prompt saving, reload persistence, fixed
 compilation boundaries, empty-state validation, modal Escape/focus restoration,

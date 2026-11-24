@@ -34,7 +34,9 @@ export async function generateAnswer(prompts, { apiKey = process.env.GEMINI_API_
   const result = await response.json();
   const candidate = result.candidates?.[0];
   if (candidate?.finishReason !== 'STOP') {
-    throw new Error('Gemini did not return a complete answer.');
+    const error = new Error('Gemini did not return a complete answer.');
+    error.code = candidate?.finishReason === 'MAX_TOKENS' ? 'output_limit' : 'provider_rejected';
+    throw error;
   }
   const text = candidate.content?.parts?.filter(part => !part.thought).map(part => part.text ?? '').join('');
   if (!text?.trim()) throw new Error('Gemini returned no text answer.');

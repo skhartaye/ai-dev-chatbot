@@ -21,7 +21,7 @@
       crossorigin
     />
     <link rel="stylesheet" href="/styles.css" />
-    <script src="/app.js" type="module"></script>
+    <script src="/bundle.js" type="module"></script>
   </head>
   <body>
     <a class="skip-link" href="#conversation-title">Skip to conversation</a>
@@ -63,7 +63,8 @@
           <div class="account-row">
             <span class="avatar" aria-hidden="true">L</span>
             <div>
-              <strong>Local workspace</strong><span>Saved on this device</span>
+              <strong id="workspace-name">Local workspace</strong
+              ><span id="workspace-status">Saved on this device</span>
             </div>
             <button id="sign-in" class="text-button" type="button">
               Sign in
@@ -97,7 +98,9 @@
             ><span class="header-model">Gemini Flash Lite</span>
           </div>
           <div class="topbar-actions">
-            <span class="preview-badge">Local preview</span>
+            <span id="connection-status" class="preview-badge"
+              >Local preview</span
+            >
             <button
               id="mobile-new"
               class="icon-button mobile-only"
@@ -216,8 +219,8 @@
                   </div>
                 </div>
               </form>
-              <p class="local-note">
-                Saved in this browser. AI is not connected yet.
+              <p id="connection-note" class="local-note" role="status">
+                Sign in to queue prompts and generate AI answers.
               </p>
             </div>
           </section>
@@ -295,15 +298,13 @@
         <div class="model-note">
           <span class="section-label">SELECTED MODEL</span
           ><strong>Gemini 3.5 Flash Lite</strong
-          ><span>Free tier · Not connected in this preview</span>
+          ><span>Free tier · Shared provider quotas apply</span>
         </div>
       </aside>
     </dialog>
     <div id="toast" class="toast" role="status" aria-atomic="true"></div>
     <noscript
-      ><div class="noscript">
-        Enable JavaScript to use this local interface preview.
-      </div></noscript
+      ><div class="noscript">Enable JavaScript to use Kahuron.</div></noscript
     >
 
     <dialog id="sign-in-dialog" aria-labelledby="sign-in-title">
@@ -329,14 +330,14 @@
           required
           placeholder="you@example.com"
         /><button class="primary-button" type="submit">
-          Continue with email
+          Send sign-in link
         </button>
         <p id="sign-in-feedback" class="field-error" role="status">
-          Sign-in preview. No email will be sent.
+          We’ll email a secure sign-in link.
         </p>
       </form>
       <button class="text-button" type="button" data-close="sign-in-dialog">
-        Keep exploring the preview
+        Continue locally
       </button>
     </dialog>
 
