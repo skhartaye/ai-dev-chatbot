@@ -1,0 +1,8 @@
+# Frontend build command and publish directory will be set when the app is added.
+# The API and background worker are hosted separately on Render.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
