@@ -1,3 +1,5 @@
+import { reveal } from "./motion.js";
+
 const STORAGE_KEY = "kahuron.preview.v1";
 const $ = (selector) => document.querySelector(selector);
 const formatTime = (value) =>
@@ -9,6 +11,17 @@ let storageError = "";
 let state = load();
 let saveTimer;
 let toastTimer;
+
+document.addEventListener(
+  "keydown",
+  () => document.documentElement.classList.add("keyboard-navigation"),
+  true,
+);
+document.addEventListener(
+  "pointerdown",
+  () => document.documentElement.classList.remove("keyboard-navigation"),
+  true,
+);
 
 function load() {
   try {
@@ -255,6 +268,7 @@ $("#prompt-form").addEventListener("submit", (event) => {
   input.focus();
   if (saved) announce("Prompt saved in this browser.");
   $("#prompt-list").lastElementChild?.scrollIntoView({ block: "nearest" });
+  reveal($("#prompt-list").lastElementChild);
 });
 $("#compile").addEventListener("click", () => {
   const c = current();
@@ -275,6 +289,7 @@ $("#compile").addEventListener("click", () => {
   c.jobs.push(job);
   persist();
   render();
+  reveal($("#job-list").firstElementChild);
   announce("Compilation saved locally. AI processing will be connected next.");
 });
 for (const button of document.querySelectorAll("[data-starter]"))

@@ -45,3 +45,12 @@ and layouts at 320, 390, 768, 1024 pixels and the normal desktop viewport.
 The interface uses layered writing surfaces, slate navigation, and self-hosted
 Manrope Variable (Fontsource package version 5.3.0). The font license is retained
 in `public/fonts/OFL.txt`; loading the interface makes no external font requests.
+
+Motion uses native CSS transitions and Web Animations for newly saved prompt and
+compilation cards. Existing cards do not replay animations. Keyboard actions and
+reduced-motion preferences skip spatial motion. Supporting browsers animate native
+dialog entry/exit; other browsers retain immediate native open/close behavior.
+`npm test` includes the motion accessibility guard. Chrome checks covered normal
+and emulated reduced-motion dialog states, Escape focus recovery, and repeated
+open/close. Physical touch-device testing and slowed DevTools playback were not
+performed (the browser connection did not support Animation-domain commands).
