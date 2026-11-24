@@ -53,6 +53,7 @@ export async function listConversations() {
     prompts: [],
     jobs: [],
     draft: "",
+    remote: true,
   }));
 }
 export async function loadConversation(id) {

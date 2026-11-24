@@ -406,14 +406,16 @@ $("#prompt-form").addEventListener("submit", (event) => {
     outbox.push({
       type: "prompt",
       conversationId: c.id,
-      title: c.prompts.length
-        ? c.title
-        : Array.from(text).slice(0, 48).join(""),
+      title:
+        c.remote || c.prompts.length
+          ? c.title
+          : Array.from(text).slice(0, 48).join(""),
       prompt,
     });
   c.prompts.push(prompt);
   c.draft = "";
-  if (c.prompts.length === 1) c.title = Array.from(text).slice(0, 48).join("");
+  if (c.prompts.length === 1 && !c.remote)
+    c.title = Array.from(text).slice(0, 48).join("");
   clearTimeout(saveTimer);
   const saved = persist();
   if (!saved) {
@@ -711,6 +713,10 @@ async function flushOutbox() {
           p_id: action.conversationId,
           p_title: action.title,
         });
+        const conversation = state.conversations.find(
+          (c) => c.id === action.conversationId,
+        );
+        if (conversation) conversation.remote = true;
         await rpc("save_prompt", {
           p_id: action.prompt.id,
           p_conversation_id: action.conversationId,
@@ -757,6 +763,7 @@ async function refreshCloud() {
       const existing = state.conversations.find((c) => c.id === remote.id);
       if (existing) {
         existing.title = remote.title;
+        existing.remote = true;
       } else {
         remote.draft = drafts[remote.id] || "";
         state.conversations.push(remote);
