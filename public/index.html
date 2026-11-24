@@ -6,12 +6,19 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#f6f8fb" />
+    <meta name="theme-color" content="#e9eef0" />
     <meta
       name="description"
       content="Collect your prompts, keep your train of thought, and compile one considered answer."
     />
     <title>Workspace · Kahuron</title>
+    <link
+      rel="preload"
+      href="/fonts/manrope-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="stylesheet" href="/styles.css" />
     <script src="/app.js" type="module"></script>
   </head>
@@ -22,7 +29,7 @@
         <header class="brand-row">
           <span class="brand" translate="no"
             >kahuron<span class="brand-period">.</span></span
-          ><span class="workspace-label">WORKSPACE</span>
+          ><span class="workspace-label">PREVIEW</span>
         </header>
         <button class="new-conversation" id="new-conversation" type="button">
           <span aria-hidden="true">＋</span> New conversation
@@ -59,17 +66,29 @@
 
       <main class="main">
         <header class="topbar">
-          <div class="breadcrumbs">
-            Workspace <span aria-hidden="true">/</span>
-            <span id="breadcrumb-title">New conversation</span>
+          <div class="workspace-heading">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="16" rx="3" />
+              <path d="M8 4v16M3 9h5" />
+            </svg>
+            <span>Prompt workspace</span>
           </div>
-          <span class="preview-badge">Local preview</span>
+          <div class="topbar-actions">
+            <span class="workspace-mode">Manual compile</span
+            ><span class="preview-badge">Local preview</span>
+          </div>
         </header>
         <div class="work-area">
           <section class="conversation">
             <header class="conversation-header">
               <div>
-                <div class="eyebrow">YOUR THINKING SPACE</div>
+                <div class="eyebrow">PROMPTS &amp; CONTEXT</div>
                 <h1 id="conversation-title" tabindex="-1">New conversation</h1>
               </div>
               <button
@@ -105,10 +124,10 @@
                       <path d="m12 9-7 7 7 7m8-14 7 7-7 7m-2-19-4 24" /></svg
                   ></span>
                 </div>
-                <h2>A little context.<br /><span>A better answer.</span></h2>
+                <h2>What are we<br /><span>building today?</span></h2>
                 <p>
-                  Add your thoughts one at a time.<br />Compile them when the
-                  whole picture is ready.
+                  Add your ideas, code, and constraints.<br />Compile one answer
+                  when you’re ready.
                 </p>
                 <div class="starters">
                   <button
@@ -116,16 +135,14 @@
                     data-starter="Help me plan a feature. The goal is to "
                   >
                     <span class="starter-symbol" aria-hidden="true">＋</span
-                    ><strong>Plan a feature</strong
-                    ><span>Turn an idea into a clear next step</span></button
+                    ><strong>Plan a feature</strong></button
                   ><button
                     type="button"
                     data-starter="Review this code for correctness and simplicity. Here is the context:\n"
                   >
                     <span class="starter-symbol code" aria-hidden="true"
                       >&lt;/&gt;</span
-                    ><strong>Review some code</strong
-                    ><span>Add code, context, and constraints</span>
+                    ><strong>Review some code</strong>
                   </button>
                 </div>
               </div>
@@ -182,7 +199,7 @@
               <span class="count-badge" id="pending-badge">0</span>
             </div>
             <div class="compile-summary">
-              <span class="section-label">NEXT ANSWER</span>
+              <span class="section-label">CONTEXT STACK</span>
               <h3 id="compile-summary-title">Your prompts, together.</h3>
               <p id="compile-summary-text">
                 Save a prompt to start building the context for your answer.
@@ -192,12 +209,7 @@
                 id="pending-list"
                 aria-label="Prompts for next compilation"
               ></ol>
-              <button
-                type="button"
-                class="compile-button"
-                id="compile"
-                aria-describedby="compile-help"
-              >
+              <button type="button" class="compile-button" id="compile">
                 Compile prompts
                 <svg
                   viewBox="0 0 20 20"
@@ -210,9 +222,6 @@
                   <path d="M7 16h8a2 2 0 0 0 2-2V7" />
                 </svg>
               </button>
-              <p id="compile-help">
-                Includes prompts saved since your last compilation.
-              </p>
               <p id="compile-error" class="field-error" hidden></p>
             </div>
             <div class="history-heading">

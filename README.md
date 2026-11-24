@@ -41,3 +41,7 @@ Run `node --test server/gemini.test.mjs`. Tests use mocked requests and incur no
 Interface checks in Chrome covered prompt saving, reload persistence, fixed
 compilation boundaries, empty-state validation, modal Escape/focus restoration,
 and layouts at 320, 390, 768, 1024 pixels and the normal desktop viewport.
+
+The interface uses layered writing surfaces, slate navigation, and self-hosted
+Manrope Variable (Fontsource package version 5.3.0). The font license is retained
+in `public/fonts/OFL.txt`; loading the interface makes no external font requests.

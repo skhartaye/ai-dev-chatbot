@@ -134,7 +134,6 @@ function render() {
   if (!c) return;
   document.title = `${c.title} · Kahuron`;
   $("#conversation-title").textContent = c.title;
-  $("#breadcrumb-title").textContent = c.title;
   $("#prompt").value = c.draft;
   clearError();
   renderNav();
