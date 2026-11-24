@@ -827,7 +827,7 @@ async function setSession(session) {
   sessionLoading = false;
   $("#prompt-form").inert = false;
   if (!state.conversations.length) makeConversation(false);
-  else navigate(state.conversations[0].id, true);
+  else navigate(current()?.id || state.conversations[0].id, true);
   connectionText();
   if (user) {
     void flushOutbox();
