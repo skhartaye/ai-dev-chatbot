@@ -8,6 +8,9 @@ import {
 } from "./cloud.js";
 
 const STORAGE_KEY = "kahuron.preview.v1";
+let entryConversationId = new URLSearchParams(location.search).get(
+  "conversation",
+);
 const $ = (selector) => document.querySelector(selector);
 const formatTime = (value) =>
   new Intl.DateTimeFormat(undefined, {
@@ -827,7 +830,11 @@ async function setSession(session) {
   sessionLoading = false;
   $("#prompt-form").inert = false;
   if (!state.conversations.length) makeConversation(false);
-  else navigate(current()?.id || state.conversations[0].id, true);
+  else {
+    const entry = state.conversations.find((c) => c.id === entryConversationId);
+    navigate(entry?.id || current()?.id || state.conversations[0].id, true);
+  }
+  entryConversationId = null;
   connectionText();
   if (user) {
     void flushOutbox();
