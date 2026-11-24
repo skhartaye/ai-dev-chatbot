@@ -88,6 +88,12 @@ export function createWorker(db, { generate = generateAnswer } = {}) {
         });
       } catch (error) {
         const plan = retryPlan(error, job.attempts);
+        console.warn("Compilation attempt deferred", {
+          id: job.id,
+          code: plan.code,
+          httpStatus: error.status ?? null,
+          failure: error.name,
+        });
         await rpc("defer_compilation", {
           p_id: job.id,
           p_lease: job.lease_token,

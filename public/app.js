@@ -616,7 +616,11 @@ function jobLabel(job) {
     {
       syncing: "Saving compilation…",
       queued:
-        job.errorCode === "rate_limit" ? "Waiting for AI quota" : "Queued",
+        job.errorCode === "rate_limit"
+          ? "Waiting for AI quota"
+          : job.errorCode
+            ? "Retry scheduled"
+            : "Queued",
       processing: "Generating answer…",
       complete: "Complete",
       failed: "Needs attention",
@@ -635,7 +639,7 @@ function jobMessage(job) {
         : "Your prompts are safe. Retry this compilation when the service is available.";
   if (job.status === "queued")
     return job.errorCode
-      ? `Your prompts are saved. Next attempt after ${formatTime(job.availableAt)}.`
+      ? `Your prompts are saved. Next attempt after ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(job.availableAt))}.`
       : "Saved in your workspace. Processing starts when capacity is available.";
   return "Waiting to sync. Keep this browser open until the compilation is saved online.";
 }
