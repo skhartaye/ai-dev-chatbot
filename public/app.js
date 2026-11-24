@@ -11,6 +11,47 @@ let storageError = "";
 let state = load();
 let saveTimer;
 let toastTimer;
+const sidebar = $(".sidebar");
+const mobileLayout = matchMedia("(max-width: 860px)");
+
+function syncSidebar() {
+  const drawer = $("#nav-dialog");
+  const hadFocus = sidebar.contains(document.activeElement);
+  drawer.close();
+  if (mobileLayout.matches) drawer.append(sidebar);
+  else $(".app-shell").prepend(sidebar);
+  if (hadFocus)
+    (mobileLayout.matches ? $("#open-nav") : $("#new-conversation")).focus();
+}
+mobileLayout.addEventListener("change", syncSidebar);
+syncSidebar();
+function fitViewport() {
+  if (window.visualViewport?.scale === 1)
+    document.documentElement.style.setProperty(
+      "--app-height",
+      `${Math.round(visualViewport.height)}px`,
+    );
+}
+window.visualViewport?.addEventListener("resize", fitViewport);
+fitViewport();
+for (const [buttonId, dialogId] of [
+  ["open-nav", "nav-dialog"],
+  ["open-compilation", "compilation-dialog"],
+]) {
+  const button = document.getElementById(buttonId);
+  const dialog = document.getElementById(dialogId);
+  button.addEventListener("click", () => {
+    dialog.showModal();
+    button.setAttribute("aria-expanded", "true");
+  });
+  dialog.addEventListener("close", () =>
+    button.setAttribute("aria-expanded", "false"),
+  );
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+}
+$("#mobile-new").addEventListener("click", () => makeConversation());
 
 document.addEventListener(
   "keydown",
@@ -98,6 +139,7 @@ function pending(c) {
   return c.prompts.filter((p) => !assigned.has(p.id));
 }
 function navigate(id, replace = false) {
+  $("#nav-dialog").close();
   const url = new URL(location.href);
   url.searchParams.set("conversation", id);
   history[replace ? "replaceState" : "pushState"]({}, "", url);
@@ -151,6 +193,7 @@ function render() {
   clearError();
   renderNav();
   $("#empty-state").hidden = c.prompts.length > 0;
+  $(".conversation").classList.toggle("is-empty", c.prompts.length === 0);
   const list = $("#prompt-list");
   list.replaceChildren();
   const unassigned = pending(c);
@@ -178,6 +221,7 @@ function render() {
     list.append(item);
   }
   $("#pending-badge").textContent = unassigned.length;
+  $("#pending-open-count").textContent = unassigned.length;
   $("#compile-summary-title").textContent = unassigned.length
     ? `${unassigned.length} prompt${unassigned.length === 1 ? "" : "s"}. One answer.`
     : "Your prompts, together.";
@@ -315,7 +359,10 @@ $("#export").addEventListener("click", () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   announce("Conversation exported.");
 });
-$("#sign-in").addEventListener("click", () => $("#sign-in-dialog").showModal());
+$("#sign-in").addEventListener("click", () => {
+  $("#nav-dialog").close();
+  $("#sign-in-dialog").showModal();
+});
 $("#sign-in-form").addEventListener("submit", (event) => {
   event.preventDefault();
   $("#sign-in-feedback").textContent =
@@ -359,6 +406,7 @@ function showExample(stage) {
     button.setAttribute("aria-pressed", String(button.dataset.stage === stage));
 }
 $("#open-example").addEventListener("click", () => {
+  $("#nav-dialog").close();
   showExample("queued");
   $("#example-dialog").showModal();
 });

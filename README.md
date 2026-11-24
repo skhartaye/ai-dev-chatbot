@@ -42,7 +42,7 @@ Interface checks in Chrome covered prompt saving, reload persistence, fixed
 compilation boundaries, empty-state validation, modal Escape/focus restoration,
 and layouts at 320, 390, 768, 1024 pixels and the normal desktop viewport.
 
-The interface uses layered writing surfaces, slate navigation, and self-hosted
+The interface uses a centered chat, a docked composer, on-demand compilation, and self-hosted
 Manrope Variable (Fontsource package version 5.3.0). The font license is retained
 in `public/fonts/OFL.txt`; loading the interface makes no external font requests.
 
@@ -54,3 +54,10 @@ dialog entry/exit; other browsers retain immediate native open/close behavior.
 and emulated reduced-motion dialog states, Escape focus recovery, and repeated
 open/close. Physical touch-device testing and slowed DevTools playback were not
 performed (the browser connection did not support Animation-domain commands).
+
+Mobile navigation uses a native dialog drawer with the same conversation list as
+desktop. Compilation opens as a bottom sheet on mobile and a side sheet on desktop.
+Chrome checks confirmed no horizontal overflow at 320, 390, 768, and 1440 pixels,
+visible save controls at a simulated 390x360 keyboard viewport, and draft persistence
+when switching conversations. A physical mobile keyboard has not been tested.
+
