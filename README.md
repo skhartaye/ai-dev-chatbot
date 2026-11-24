@@ -3,7 +3,9 @@
 ## AI provider
 
 The server uses `gemini-3.5-flash-lite` through the Gemini Developer API.
-There are no fallback models or paid tools configured.
+Only HTTP 503 availability failures use one `gemini-3.1-flash-lite` backup call.
+Both model IDs have a Free tier. Quota, safety, and validation failures do not switch models.
+There are no paid tools configured; the actual successful model is saved with each answer.
 
 Set `GEMINI_API_KEY` in the Render server/worker environment, using a Google
 project that remains on the Free tier. Never commit the key or place it in
@@ -13,7 +15,9 @@ the model name alone does not guarantee free usage.
 `server/gemini.mjs` accepts ordered prompts and returns one complete answer with
 provider token usage. It rejects truncated or blocked answers and exposes
 retryable HTTP failures for the persistent queue worker to reschedule.
-It makes one request per invocation, with a two-minute deadline.
+The low-level provider makes one request per invocation. A worker attempt permits
+45 seconds for the primary call and up to 120 seconds for the availability backup,
+remaining within the database's four-minute lease including database operations.
 
 ## Current status
 
@@ -79,7 +83,7 @@ See [market comparison](docs/market-positioning.md) for sourced positioning and 
 
 ## Verification
 
-Run `npm test` (seven checks) and `npm run build`. Tests use mocked provider requests and incur no API usage.
+Run `npm test` (ten checks) and `npm run build`. Tests use mocked provider requests and incur no API usage.
 
 Interface checks in Chrome covered prompt saving, reload persistence, fixed
 compilation boundaries, empty-state validation, modal Escape/focus restoration,

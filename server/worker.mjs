@@ -1,4 +1,4 @@
-import { generateAnswer } from "./gemini.mjs";
+import { generateAvailableAnswer } from "./gemini.mjs";
 
 export function retryPlan(
   error,
@@ -34,7 +34,7 @@ export function retryPlan(
   return { code, delay: Math.ceil(delay), retryable: Boolean(retryable) };
 }
 
-export function createWorker(db, { generate = generateAnswer } = {}) {
+export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
   let running = false;
   let stopped = false;
   async function rpc(name, args) {
