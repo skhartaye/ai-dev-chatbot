@@ -17,9 +17,11 @@ It makes one request per invocation, with a two-minute deadline.
 
 ## Current status
 
-Provider code and Netlify headers are present. Authentication, database migrations,
-the persistent queue, API, worker, frontend, and Render deployment are not built yet.
-No live model call has been verified. The existing `multiprint` database must not be used.
+Provider code, Netlify headers, and a Node backend with a public `/health` endpoint
+are present. Run `npm start` to start the backend and `npm test` for provider tests.
+Authentication, database migrations, the persistent queue, chat API, worker, and
+frontend are not built yet. The existing `multiprint` database must not be used.
+Render's Free web service sleeps when idle and is not an always-on queue worker.
 
 ## Verification
 
