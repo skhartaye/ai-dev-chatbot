@@ -6,16 +6,16 @@
   font-display: swap;
 }
 :root {
-  color-scheme: light;
-  --canvas: #fafcfb;
-  --surface: #fff;
-  --ink: #263b35;
-  --muted: #5d7068;
-  --line: #dce5e0;
-  --accent: #245d50;
-  --accent-hover: #1a4b40;
-  --accent-soft: #eaf3ee;
-  --error: #a32d3d;
+  color-scheme: dark;
+  --canvas: #1c2024;
+  --surface: #292e33;
+  --ink: #edf0ed;
+  --muted: #b3bdb7;
+  --line: #48524c;
+  --accent: #9bd2b8;
+  --accent-hover: #b5e4cd;
+  --accent-soft: #33473e;
+  --error: #ffadb7;
   font:
     16px/1.5 Manrope,
     "Segoe UI",
@@ -113,7 +113,7 @@ li {
   inset-inline-start: 1rem;
   z-index: 20;
   padding: 1rem;
-  background: white;
+  background: var(--surface);
   color: var(--accent);
   border-radius: 8px;
 }
@@ -128,7 +128,7 @@ li {
 }
 /* One sidebar is reused in the mobile drawer, keeping history in one place. */
 .sidebar {
-  background: #eef3ef;
+  background: #15191c;
   padding: 26px 16px 18px;
   display: flex;
   flex-direction: column;
@@ -136,7 +136,7 @@ li {
   block-size: 100%;
   min-block-size: 0;
   min-inline-size: 0;
-  border-inline-end: 1px solid #e3eae5;
+  border-inline-end: 1px solid #30383d;
 }
 .brand-row {
   display: flex;
@@ -151,15 +151,15 @@ li {
   letter-spacing: -0.08rem;
 }
 .brand-period {
-  color: #427363;
+  color: #9bd2b8;
 }
 .new-conversation {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: #fff;
-  border: 1px solid #d3dfd7;
+  background: #292e33;
+  border: 1px solid #4d5952;
   font-size: 0.8125rem;
   font-weight: 700;
   box-shadow: 0 1px 2px #1a3a2e07;
@@ -173,15 +173,15 @@ li {
 }
 .sidebar input {
   inline-size: 100%;
-  border: 1px solid #839a8d;
-  background: #f8faf8;
+  border: 1px solid #6e8075;
+  background: #242a2e;
   padding: 10px 12px;
   border-radius: 9px;
   font-size: 0.8125rem;
   color: var(--ink);
 }
 .sidebar input::placeholder {
-  color: #63766b;
+  color: #b3bdb7;
   opacity: 1;
 }
 .section-label {
@@ -211,16 +211,16 @@ li {
   border-radius: 9px;
   text-decoration: none;
   font-size: 0.8125rem;
-  color: #4a6155;
+  color: #becbc3;
   line-height: 1.6;
   overflow-wrap: anywhere;
   border: 1px solid transparent;
 }
 .conversation-link[aria-current="page"] {
-  background: #fff;
-  color: #233f30;
+  background: #292e33;
+  color: #edf0ed;
   font-weight: 700;
-  border-color: #dde8e0;
+  border-color: #54685b;
   box-shadow: 0 1px 3px #173c2c05;
 }
 .sidebar-empty {
@@ -248,7 +248,7 @@ li {
   display: flex;
   align-items: center;
   gap: 10px;
-  border-block-start: 1px solid #d7e2da;
+  border-block-start: 1px solid #37413b;
   padding-block-start: 18px;
   flex-wrap: wrap;
 }
@@ -257,8 +257,8 @@ li {
   place-items: center;
   inline-size: 34px;
   block-size: 34px;
-  border: 1px solid #bad2c3;
-  background: #dcece2;
+  border: 1px solid #52695b;
+  background: #33473e;
   border-radius: 50%;
   font-size: 0.75rem;
   font-weight: 700;
@@ -319,9 +319,9 @@ li {
 }
 .preview-badge {
   font-size: 0.75rem;
-  color: #546e5e;
-  border: 1px solid #d5e2d9;
-  background: #f3f7f4;
+  color: #c0ccc4;
+  border: 1px solid #48584e;
+  background: #282f2c;
   border-radius: 6px;
   padding: 5px 9px;
   white-space: nowrap;
@@ -375,7 +375,7 @@ h1 {
   flex-shrink: 0;
   padding: 0;
   background: transparent;
-  color: #536e5d;
+  color: #b3bdb7;
   border: 1px solid transparent;
   border-radius: 12px;
 }
@@ -406,7 +406,7 @@ h1 {
   font-weight: 650;
   letter-spacing: -0.055em;
   line-height: 1.2;
-  color: #29483a;
+  color: #edf0ed;
 }
 .empty-state > p {
   font-size: 0.9375rem;
@@ -425,8 +425,8 @@ h1 {
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: #fff;
-  border: 1px solid #d5e1d8;
+  background: #292e33;
+  border: 1px solid #536259;
   border-radius: 14px;
   box-shadow: 0 2px 4px #183e2b04;
 }
@@ -436,7 +436,7 @@ h1 {
 }
 .starter-symbol {
   font-size: 1.1rem;
-  color: #4a7a5d;
+  color: #9bd2b8;
   line-height: 1;
 }
 .starter-symbol.code {
@@ -448,8 +448,8 @@ h1 {
   background: var(--canvas);
 }
 .composer {
-  background: #fff;
-  border: 1px solid #a8bcb0;
+  background: #292e33;
+  border: 1px solid #73867a;
   border-radius: 22px;
   padding: 18px 20px 14px;
   box-shadow:
@@ -457,7 +457,7 @@ h1 {
     0 8px 28px #193e2c07;
 }
 .composer:focus-within {
-  border-color: #648d75;
+  border-color: #9bd2b8;
   box-shadow:
     0 0 0 2px #245d5009,
     0 8px 28px #193e2c07;
@@ -466,7 +466,7 @@ h1 {
   display: block;
   font-size: 0.75rem;
   font-weight: 650;
-  color: #4d6b58;
+  color: #c1cfc5;
   margin-block-end: 9px;
 }
 .composer textarea {
@@ -477,13 +477,13 @@ h1 {
   resize: vertical;
   border: 0;
   padding: 0;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   line-height: 1.7;
   border-radius: 3px;
 }
 .composer textarea::placeholder {
-  color: #697f70;
+  color: #b3bdb7;
   opacity: 1;
 }
 .composer textarea:focus-visible {
@@ -507,14 +507,14 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #d9e5dd;
+  border: 1px solid #52645a;
   border-radius: 20px;
   padding: 8px 12px;
   font-size: 0.8125rem;
   font-weight: 650;
-  background: #f4f8f5;
+  background: #303a34;
   min-block-size: 44px;
-  color: #3d6750;
+  color: #c5d9cb;
 }
 .compile-trigger span {
   display: grid;
@@ -525,7 +525,7 @@ h1 {
   min-inline-size: 20px;
   min-block-size: 20px;
   padding: 2px 4px;
-  background: #e0ece3;
+  background: #40564a;
   border-radius: 50%;
 }
 .shortcut {
@@ -538,7 +538,7 @@ kbd {
 }
 .primary-button {
   background: var(--accent);
-  border: 1px solid #174739;
+  border: 1px solid #9bd2b8;
   border-radius: 14px;
   padding: 10px 16px;
   min-block-size: 44px;
@@ -559,7 +559,7 @@ kbd {
 }
 .local-note {
   font-size: 0.75rem;
-  color: #63786c;
+  color: #b3bdb7;
   text-align: center;
   line-height: 1.6;
   margin-block-start: 10px;
@@ -581,8 +581,8 @@ kbd {
   min-inline-size: min(340px, 100%);
   margin: 0 0 24px auto;
   padding: 18px 20px;
-  background: #edf3ef;
-  border: 1px solid #e4ece7;
+  background: #303934;
+  border: 1px solid #46554b;
   border-radius: 20px 20px 6px 20px;
   content-visibility: auto;
   contain-intrinsic-size: auto 150px;
@@ -599,19 +599,19 @@ kbd {
   gap: 10px;
   align-items: center;
   font-size: 0.75rem;
-  color: #5d7567;
+  color: #b3bdb7;
 }
 .prompt-number {
   font-family: Consolas, monospace;
-  color: #466d56;
+  color: #c0d7c7;
 }
 .prompt-tag {
   font-size: 0.75rem;
-  color: #346748;
+  color: #a9d7b7;
   font-weight: 600;
 }
 .prompt-tag.assigned {
-  color: #63776b;
+  color: #b3bdb7;
   font-weight: 400;
 }
 .prompt-content {
@@ -625,9 +625,9 @@ dialog {
   inline-size: min(520px, calc(100% - 32px));
   max-block-size: calc(100dvh - 32px);
   padding: 42px;
-  border: 1px solid #c6d7cc;
+  border: 1px solid #526359;
   border-radius: 20px;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   box-shadow:
     0 4px 12px #173b2c1a,
@@ -676,8 +676,8 @@ dialog label {
 dialog input {
   inline-size: 100%;
   min-block-size: 48px;
-  border: 1px solid #829c8a;
-  background: #fcfdfc;
+  border: 1px solid #73867a;
+  background: #22282c;
   padding: 12px;
   border-radius: 10px;
   color: var(--ink);
@@ -699,8 +699,8 @@ dialog > .text-button {
 .example-stages button {
   font-size: 0.75rem;
   padding: 8px 12px;
-  border: 1px solid #d3e0d7;
-  background: #f7faf8;
+  border: 1px solid #526359;
+  background: #252c30;
 }
 .example-stages button[aria-pressed="true"] {
   background: var(--accent);
@@ -709,16 +709,16 @@ dialog > .text-button {
 }
 .example-output {
   padding: 22px;
-  border: 1px solid #d7e4dc;
-  background: #f4f8f5;
+  border: 1px solid #46554b;
+  background: #303a34;
   border-radius: 12px;
   min-block-size: 180px;
 }
 .example-status {
   display: inline-flex;
   font-size: 0.75rem;
-  color: #34634a;
-  background: #e0eee4;
+  color: #c5d9cb;
+  background: #354b3e;
   border-radius: 5px;
   padding: 4px 8px;
   margin-block-end: 15px;
@@ -763,8 +763,8 @@ dialog > .text-button {
 }
 .compile-summary {
   padding: 20px;
-  background: #f7faf8;
-  border: 1px solid #dce8df;
+  background: #252c30;
+  border: 1px solid #46554b;
   border-radius: 14px;
 }
 .count-badge {
@@ -776,8 +776,8 @@ dialog > .text-button {
     0.75rem/1 Consolas,
     monospace;
   border-radius: 7px;
-  background: #e1eee5;
-  color: #3d6750;
+  background: #354b3e;
+  color: #c5d9cb;
 }
 .compile-summary h3 {
   font-size: 1.2rem;
@@ -806,12 +806,12 @@ dialog > .text-button {
   font-size: 0.8125rem;
   line-height: 1.7;
   min-inline-size: 0;
-  border-block-end: 1px solid #e0eae3;
+  border-block-end: 1px solid #46554b;
   padding-block-end: 12px;
 }
 .pending-number {
   font-family: Consolas, monospace;
-  color: #466d56;
+  color: #c0d7c7;
   flex-shrink: 0;
 }
 .pending-text {
@@ -832,7 +832,7 @@ dialog > .text-button {
   padding: 12px 14px;
   background: var(--accent);
   color: white;
-  border: 1px solid #174739;
+  border: 1px solid #9bd2b8;
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 700;
@@ -865,11 +865,11 @@ dialog > .text-button {
   justify-items: center;
   gap: 12px;
   padding: 22px;
-  border: 1px dashed #bfd3c5;
+  border: 1px dashed #6c8274;
   border-radius: 12px;
   min-block-size: 110px;
   color: var(--muted);
-  background: #f9fbfa;
+  background: #242b2e;
 }
 .no-jobs p {
   font-size: 0.8125rem;
@@ -883,14 +883,14 @@ dialog > .text-button {
 }
 .job-card {
   padding: 18px;
-  border: 1px solid #e0cfae;
+  border: 1px solid #8a754e;
   border-radius: 12px;
-  background: #fffaf0;
+  background: #3d3426;
 }
 .job-status {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #78541e;
+  color: #f4d89b;
 }
 .job-card h4 {
   font-size: 0.875rem;
@@ -898,12 +898,12 @@ dialog > .text-button {
 }
 .job-card p {
   font-size: 0.8125rem;
-  color: #6d5b3b;
+  color: #e1c99f;
 }
 .job-card time {
   display: block;
   font-size: 0.75rem;
-  color: #6d5b3b;
+  color: #e1c99f;
   margin-block-start: 12px;
 }
 .model-note {
@@ -954,8 +954,8 @@ dialog > .text-button {
   opacity: 0;
   inline-size: max-content;
   max-inline-size: calc(100% - 32px);
-  border: 1px solid #426957;
-  background: #214b39;
+  border: 1px solid #73867a;
+  background: #33473e;
   color: white;
   border-radius: 12px;
   padding: 12px 18px;
@@ -973,28 +973,28 @@ dialog > .text-button {
   inset-block-start: 0;
   inset-inline: 0;
   padding: 1rem;
-  background: #fff2d5;
-  color: #68491a;
+  background: #453a27;
+  color: #f4d89b;
 }
 @media (hover: hover) and (pointer: fine) {
   .conversation-link:hover,
   .text-button:hover,
   .icon-button:hover {
-    background: #e4eee7;
-    color: #254e35;
+    background: #3b4c41;
+    color: #d5e9db;
   }
   .new-conversation:hover,
   .starters button:hover,
   .compile-trigger:hover {
-    background: #f2f8f4;
-    border-color: #a8c5b1;
+    background: #35413a;
+    border-color: #829e8b;
   }
   .primary-button:hover,
   .compile-button:hover {
     background: var(--accent-hover);
   }
   .example-stages button:hover {
-    border-color: #8fb69b;
+    border-color: #9bd2b8;
   }
 }
 @media (max-width: 1100px) {
@@ -1157,7 +1157,7 @@ dialog > .text-button {
     inline-size: 32px;
     block-size: 4px;
     border-radius: 3px;
-    background: #c5d5cb;
+    background: #73867a;
     align-self: center;
     margin-block-end: -8px;
   }
@@ -1293,4 +1293,10 @@ dialog > .text-button {
   html {
     scroll-behavior: auto !important;
   }
+}
+
+.primary-button, .compile-button { color: #14251c; }
+@media (forced-colors: active) {
+  :root { --canvas: Canvas; --surface: Canvas; --ink: CanvasText; --muted: CanvasText; --line: ButtonBorder; --accent: Highlight; --error: CanvasText; }
+  .primary-button, .compile-button { color: HighlightText; }
 }
