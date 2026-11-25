@@ -117,7 +117,7 @@ export async function editScannedPdf(
       log = [];
     onProgress("Loading the on-device OCR engine…");
     const create =
-      createOcrWorker || (await import("tesseract.js")).createWorker;
+      createOcrWorker || (await import("tesseract.js")).default.createWorker;
     const startingWorker = create("eng", 1, {
       workerPath: "/extraction-assets/ocr-worker.js",
       corePath: "/extraction-assets/ocr",
