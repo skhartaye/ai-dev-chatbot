@@ -160,11 +160,15 @@ export async function editImage(
           pixels[i + 2] = c.grayscale ? gray : gray + (b - gray) * saturation;
         }
         ctx.putImageData(image, 0, 0);
-        description = ["brightness", "contrast", "saturation"]
-          .filter((k) => k in c)
-          .map((k) => `${k} ${c[k] >= 0 ? "+" : ""}${c[k]}%`)
-          .concat(c.grayscale ? ["grayscale"] : [])
-          .join(" · ");
+        description =
+          ["brightness", "contrast", "saturation"]
+            .filter(
+              (k) =>
+                k in c && c[k] !== 0 && !(c.grayscale && k === "saturation"),
+            )
+            .map((k) => `${k} ${c[k] >= 0 ? "+" : ""}${c[k]}%`)
+            .concat(c.grayscale ? ["grayscale"] : [])
+            .join(" · ") || "Keep existing colors.";
       }
       if (["addText", "rectangle", "ellipse"].includes(c.op)) {
         ctx = canvas.getContext("2d");

@@ -35,7 +35,8 @@ export async function mountVisualReview(
       grid.append(figure);
       if (result.kind === "image") {
         const image = el("img");
-        image.alt = title + " · " + result.name;
+        image.alt =
+          index === 0 ? "Original attachment" : "Edited copy · " + result.name;
         image.decoding = "async";
         const url = URL.createObjectURL(blob);
         resources.push(() => URL.revokeObjectURL(url));
