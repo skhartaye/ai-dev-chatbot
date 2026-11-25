@@ -10,4 +10,4 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self' https://vkpvgpbdnlnngwzttciy.supabase.co https://ai-dev-chatbot.onrender.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self'; font-src 'self' blob:; img-src 'self' blob:; connect-src 'self' https://vkpvgpbdnlnngwzttciy.supabase.co https://ai-dev-chatbot.onrender.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"

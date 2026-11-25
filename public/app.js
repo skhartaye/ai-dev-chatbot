@@ -1,5 +1,6 @@
 import { reveal } from "./motion.js";
 import { renderAnswer } from "./render-answer.js";
+import { extractFile, appendExtractedText } from "./extract-file.js";
 import {
   supabase,
   rpc,
@@ -35,6 +36,7 @@ let deliveryError = "";
 let staleTab = false;
 let sessionLoading = false;
 let startingGuest = false;
+let extractionController;
 const sidebar = $(".sidebar");
 const mobileLayout = matchMedia("(max-width: 860px)");
 
@@ -361,6 +363,57 @@ $("#prompt").addEventListener("input", () => {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persist, 250);
 });
+$("#cancel-extraction").addEventListener("click", () => extractionController?.abort());
+$("#attach-files").addEventListener("change", async (event) => {
+  const files = Array.from(event.target.files || []);
+  event.target.value = "";
+  if (!files.length || extractionController) return;
+  $("#file-feedback").hidden = false;
+  $("#file-errors").hidden = true;
+  if (files.length > 5) {
+    $("#file-errors").textContent = "Choose up to 5 files at a time.";
+    $("#file-errors").hidden = false;
+    return;
+  }
+  const conversationId = current()?.id;
+  const controller = new AbortController();
+  extractionController = controller;
+  $("#attach-files").disabled = true;
+  $("#cancel-extraction").hidden = false;
+  const errors = [];
+  let added = 0;
+  try {
+    for (const [index, file] of files.entries()) {
+      if (controller.signal.aborted) break;
+      const progress = message => { $("#file-status").textContent = `${index + 1}/${files.length} · ${file.name} · ${message}`; };
+      progress("Extracting text…");
+      try {
+        const text = await extractFile(file, {
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(120000)]),
+          onProgress: progress,
+        });
+        const target = state.conversations.find(c => c.id === conversationId);
+        if (!target) throw new Error("The original conversation is unavailable. Attach this file again.");
+        const before = target.draft;
+        target.draft = appendExtractedText(before, file.name, text);
+        if (!persist()) { target.draft = before; throw new Error("Could not save extracted text. Export your draft and free browser storage before trying again."); }
+        if (current()?.id === conversationId) $("#prompt").value = target.draft;
+        added++;
+      } catch (error) {
+        if (controller.signal.aborted) break;
+        console.warn("File extraction failed", error);
+        errors.push(`${file.name}: ${error.name === "TimeoutError" ? "Extraction timed out. Try a smaller file." : error.message}`);
+      }
+    }
+  } finally {
+    extractionController = null;
+    $("#attach-files").disabled = false;
+    $("#cancel-extraction").hidden = true;
+    $("#file-status").textContent = `${controller.signal.aborted ? "Extraction cancelled. " : ""}${added} file${added === 1 ? "" : "s"} added to ${current()?.id === conversationId ? "your draft" : "the original conversation’s draft"}. Review the text before sending; OCR can make mistakes.`;
+    $("#file-errors").textContent = errors.join("\n");
+    $("#file-errors").hidden = !errors.length;
+  }
+});
 $("#prompt").addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
@@ -378,6 +431,10 @@ $("#add-to-batch").addEventListener("click", () => {
 });
 function savePrompt(send) {
   const input = $("#prompt");
+  if (extractionController) {
+    announce("Wait for extraction to finish or cancel it before sending.");
+    return;
+  }
   if (sessionLoading) {
     announce("Your workspace is loading. Please try again shortly.");
     return;

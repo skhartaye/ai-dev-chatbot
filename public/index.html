@@ -194,8 +194,16 @@
                     aria-describedby="prompt-error"
                   ></textarea>
                   <p id="prompt-error" class="field-error" hidden></p>
+                  <div id="file-feedback" class="file-feedback" hidden>
+                    <p id="file-status" role="status"></p>
+                    <p id="file-errors" class="field-error" role="alert" hidden></p>
+                    <button id="cancel-extraction" class="text-button" type="button" hidden>Cancel extraction</button>
+                  </div>
                   <div class="composer-footer">
                     <div class="composer-tools">
+                      <label for="attach-files" class="attach-label">Attach files</label>
+                      <input id="attach-files" name="attachments" class="visually-hidden" type="file" multiple
+                        accept=".pdf,.docx,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.webp" aria-describedby="file-help file-errors" />
                       <button
                         id="open-compilation"
                         class="compile-trigger"
@@ -216,6 +224,7 @@
                       Send <span aria-hidden="true">↑</span>
                     </button>
                   </div>
+                  <p id="file-help" class="file-help">PDF, DOCX, XLSX, CSV, TXT, PNG/JPG/WebP · 10 MB/file. OCR reads printed English.</p>
                 </div>
               </form>
               <p id="connection-note" class="local-note" role="status">
