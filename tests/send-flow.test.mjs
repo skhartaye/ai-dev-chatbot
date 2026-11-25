@@ -1,0 +1,46 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { runInContext } from 'node:vm';
+import { build } from 'esbuild';
+import { JSDOM } from 'jsdom';
+
+test('Enter preserves a signed-out send and resumes its exact batch after sign-in', async () => {
+  const result = await build({entryPoints:['public/app.js'],bundle:true,write:false,format:'iife',plugins:[{
+    name:'fake-cloud',setup(b){b.onResolve({filter:/\/cloud\.js$/},()=>({path:'cloud',namespace:'fake'}));b.onLoad({filter:/.*/,namespace:'fake'},()=>({contents:`
+      window.calls=[];
+      export const supabase={auth:{onAuthStateChange(cb){window.signIn=()=>cb('SIGNED_IN',{user:{id:'owner'}})},signOut:async()=>({}),signInWithOtp:async()=>({})}};
+      export const rpc=async(name,args)=>{window.calls.push({name,args});return []};
+      export const listConversations=async()=>[];
+      export const loadConversation=async()=>({prompts:[],jobs:[]});
+      export const wakeWorker=async()=>true;
+    `}));}
+  }]});
+  const dom = new JSDOM(await readFile('public/index.html','utf8'),{url:'https://kahuron.netlify.app/',runScripts:'outside-only',pretendToBeVisual:true});
+  const w=dom.window;
+  w.matchMedia=()=>({matches:false,addEventListener(){}});
+  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
+  w.HTMLDialogElement.prototype.close=function(){this.open=false};
+  w.HTMLElement.prototype.scrollIntoView=()=>{};
+  w.setInterval=()=>0;
+  try {
+    runInContext(result.outputFiles[0].text,dom.getInternalVMContext());
+    const input=w.document.querySelector('#prompt');
+    input.value='Answer this saved prompt';
+    const enter=opts=>input.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true,...opts}));
+    enter({shiftKey:true});
+    enter({isComposing:true});
+    assert.equal(w.sessionStorage.getItem('kahuron.send-after-sign-in'),null);
+    enter({});
+    const intent=JSON.parse(w.sessionStorage.getItem('kahuron.send-after-sign-in'));
+    assert.equal(intent.promptIds.length,1);
+    assert.equal(w.document.querySelector('#sign-in-dialog').open,true);
+    w.signIn();
+    await new Promise(resolve=>setTimeout(resolve,100));
+    const compile=w.calls.filter(c=>c.name==='compile_prompts');
+    assert.equal(compile.length,1);
+    assert.deepEqual(Array.from(compile[0].args.p_prompt_ids),Array.from(intent.promptIds));
+    assert.equal(w.document.querySelector('#prompt-form').inert,false);
+    assert.equal(w.sessionStorage.getItem('kahuron.send-after-sign-in'),null);
+  } finally {dom.window.close();}
+});

@@ -9,6 +9,8 @@ import {
 } from "./cloud.js";
 
 const STORAGE_KEY = "kahuron.preview.v1";
+const SEND_INTENT_KEY = "kahuron.send-after-sign-in";
+const cloudStorageKey = (kind, owner = user.id) => `kahuron.${kind}.${owner}`;
 let entryConversationId = new URLSearchParams(location.search).get(
   "conversation",
 );
@@ -128,10 +130,10 @@ function persist() {
     try {
       for (const c of state.conversations) drafts[c.id] = c.draft;
       localStorage.setItem(
-        `kahuron.delivery.${user.id}`,
+        cloudStorageKey("delivery"),
         JSON.stringify(outbox),
       );
-      localStorage.setItem(`kahuron.drafts.${user.id}`, JSON.stringify(drafts));
+      localStorage.setItem(cloudStorageKey("drafts"), JSON.stringify(drafts));
       return true;
     } catch {
       announce("Browser storage is full. Export your work before leaving.");
@@ -359,14 +361,21 @@ $("#prompt").addEventListener("input", () => {
   saveTimer = setTimeout(persist, 250);
 });
 $("#prompt").addEventListener("keydown", (event) => {
-  if (event.isComposing) return;
-  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+  if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
+    if (event.isComposing || event.keyCode === 229) return;
     $("#prompt-form").requestSubmit();
   }
 });
 $("#prompt-form").addEventListener("submit", (event) => {
   event.preventDefault();
+  savePrompt(true);
+});
+$("#add-to-batch").addEventListener("click", () => {
+  $("#compilation-dialog").close();
+  savePrompt(false);
+});
+function savePrompt(send) {
   const input = $("#prompt");
   if (sessionLoading) {
     announce("Your workspace is loading. Please try again shortly.");
@@ -380,6 +389,7 @@ $("#prompt-form").addEventListener("submit", (event) => {
   }
   const text = input.value.trim();
   if (!text) {
+    if (send && pending(current()).length) { queueCompilation(); return; }
     $("#prompt-error").textContent = "Add some text before saving your prompt.";
     $("#prompt-error").hidden = false;
     input.setAttribute("aria-invalid", "true");
@@ -435,11 +445,13 @@ $("#prompt-form").addEventListener("submit", (event) => {
         ? "Prompt saved. Syncing to your workspace…"
         : "Prompt saved in this browser.",
     );
-  if (user && saved) void flushOutbox();
+  if (saved && send) queueCompilation();
+  else if (user && saved) void flushOutbox();
   $("#prompt-list").lastElementChild?.scrollIntoView({ block: "nearest" });
   reveal($("#prompt-list").lastElementChild);
-});
-$("#compile").addEventListener("click", () => {
+}
+$("#compile").addEventListener("click", () => queueCompilation());
+function queueCompilation() {
   if (sessionLoading) return;
   if (staleTab) {
     announce("Reload this tab before compiling.");
@@ -456,10 +468,13 @@ $("#compile").addEventListener("click", () => {
     return;
   }
   if (!user) {
+    try {
+      sessionStorage.setItem(SEND_INTENT_KEY, JSON.stringify({conversationId:c.id,promptIds:prompts.map(p=>p.id),jobId:crypto.randomUUID()}));
+    } catch { announce("Your prompts are saved here. Sign in, then send them again."); }
     $("#compilation-dialog").close();
     $("#sign-in-dialog").showModal();
     $("#sign-in-feedback").textContent =
-      "Sign in to save your queue and generate answers. Your local prompts stay on this device.";
+      "Sign in to send these prompts to AI. They are saved here and will be queued after sign-in in this tab.";
     return;
   }
   const job = {
@@ -481,7 +496,7 @@ $("#compile").addEventListener("click", () => {
     void flushOutbox();
     announce("Compilation queued. You can keep adding prompts.");
   }
-});
+}
 for (const button of document.querySelectorAll("[data-starter]"))
   button.addEventListener("click", () => {
     const input = $("#prompt");
@@ -598,7 +613,7 @@ window.addEventListener("beforeunload", (event) => {
 });
 window.addEventListener("storage", (event) => {
   if (user) {
-    if (event.key === `kahuron.delivery.${user.id}`) {
+    if (event.key === cloudStorageKey("delivery")) {
       staleTab = true;
       deliveryError =
         "Another tab changed your pending work. Reload before saving more prompts.";
@@ -830,7 +845,27 @@ async function setSession(session) {
       deliveryError =
         "Could not load your workspace. Reconnect and reload to try again.";
     }
-    mergeOutbox();
+    try {
+      mergeOutbox();
+      const intent = JSON.parse(sessionStorage.getItem(SEND_INTENT_KEY) || "null");
+      const preview = intent && load().conversations.find(c => c.id === intent.conversationId);
+      if (preview) {
+        const prompts = preview.prompts.filter(p => intent.promptIds.includes(p.id));
+        if (prompts.length !== intent.promptIds.length) throw new Error("Missing saved prompts");
+        for (const prompt of prompts) {
+          if (!outbox.some(a => a.prompt?.id === prompt.id))
+            outbox.push({type:"prompt",conversationId:preview.id,title:preview.title,prompt});
+        }
+        if (!outbox.some(a => a.job?.id === intent.jobId))
+          outbox.push({type:"compile",conversationId:preview.id,title:preview.title,job:{id:intent.jobId,promptIds:intent.promptIds,createdAt:Date.now(),status:"syncing"}});
+        mergeOutbox();
+        if (!persist()) throw new Error("Could not preserve delivery");
+        entryConversationId = preview.id;
+        sessionStorage.removeItem(SEND_INTENT_KEY);
+      }
+    } catch {
+      deliveryError = "Your saved prompts could not be queued. Reload this tab to try again.";
+    }
     $("#sign-in-dialog").close();
   } else state = load();
   sessionLoading = false;

@@ -189,7 +189,6 @@
                     name="prompt"
                     rows="3"
                     maxlength="20000"
-                    required
                     autocomplete="off"
                     placeholder="Add an idea, a requirement, or one more detail…"
                     aria-describedby="prompt-error"
@@ -204,9 +203,9 @@
                         aria-controls="compilation-dialog"
                         aria-expanded="false"
                       >
-                        Compile <span id="pending-open-count">0</span></button
+                        Batch <span id="pending-open-count">0</span></button
                       ><span class="shortcut"
-                        ><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to save</span
+                        ><kbd>Enter</kbd> to send · <kbd>Shift + Enter</kbd> for a new line</span
                       >
                     </div>
                     <button
@@ -214,7 +213,7 @@
                       class="primary-button"
                       id="save-prompt"
                     >
-                      Save prompt <span aria-hidden="true">＋</span>
+                      Send <span aria-hidden="true">↑</span>
                     </button>
                   </div>
                 </div>
@@ -276,6 +275,7 @@
               <path d="M7 16h8a2 2 0 0 0 2-2V7" />
             </svg>
           </button>
+          <button id="add-to-batch" class="text-button" type="button">Add draft to batch</button>
           <p id="compile-error" class="field-error" hidden></p>
         </div>
         <div class="history-heading">
