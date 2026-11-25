@@ -180,6 +180,7 @@ function pending(c) {
   return c.prompts.filter((p) => !assigned.has(p.id));
 }
 function navigate(id, replace = false) {
+  if (!extractionController) $("#file-feedback").hidden = true;
   $("#nav-dialog").close();
   const url = new URL(location.href);
   url.searchParams.set("conversation", id);
@@ -497,6 +498,7 @@ function savePrompt(send) {
   }
   render();
   input.focus();
+  if (saved) $("#file-feedback").hidden = true;
   if (saved)
     announce(
       user
