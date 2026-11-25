@@ -22,7 +22,7 @@ export const putFile=(id,blob)=>transaction("readwrite",store=>store.put(blob,id
 export const getFile=id=>transaction("readonly",store=>store.get(id));
 export const removeFile=id=>transaction("readwrite",store=>store.delete(id));
 
-export async function prepareAttachment(file,signal,onProgress) {
+export async function prepareAttachment(file,signal,onProgress,id=crypto.randomUUID()) {
   const {validateFile,extractFile}=await import("./extract-file.js");
   const ext=validateFile(file);
   let blob,mimeType;
@@ -40,7 +40,7 @@ export async function prepareAttachment(file,signal,onProgress) {
     blob=new Blob([text],{type:mimeType});
   }
   signal.throwIfAborted();
-  const attachment={id:crypto.randomUUID(),name:file.name,mimeType,size:blob.size};
+  const attachment={id,name:file.name,mimeType,size:blob.size};
   await putFile(attachment.id,blob);
   if(signal.aborted) { await removeFile(attachment.id);signal.throwIfAborted(); }
   return attachment;

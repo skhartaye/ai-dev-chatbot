@@ -16,6 +16,7 @@ for (const mode of ['send','failure','restore']) test(`Guest attachment flow: ${
       export const loadConversation=async()=>({prompts:[],jobs:[]});
       export const wakeWorker=async()=>true;
       export const uploadAttachment=async()=>{};
+      export const downloadAttachment=async()=>new Blob(['test']);
     `}));}
   }]});
   const dom = new JSDOM(await readFile('public/index.html','utf8'),{url:'https://kahuron.netlify.app/',runScripts:'outside-only',pretendToBeVisual:true});

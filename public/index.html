@@ -21,6 +21,7 @@
       crossorigin
     />
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/attachments.css" />
     <script src="/bundle.js" type="module"></script>
   </head>
   <body>
@@ -98,6 +99,7 @@
             ><span class="header-model">Gemini Flash Lite</span>
           </div>
           <div class="topbar-actions">
+            <button id="open-files" class="files-toggle" type="button" aria-controls="file-panel" aria-expanded="false">Files <span id="file-count">0</span></button>
             <span id="connection-status" class="preview-badge"
               >Local preview</span
             >
@@ -183,6 +185,10 @@
                 aria-labelledby="prompt-label"
               >
                 <div class="composer">
+                  <div id="attachment-tray" class="attachment-tray" hidden>
+                    <span class="tray-heading">Ready for your question</span>
+                    <ul id="draft-attachments" class="draft-attachments" aria-label="Files to send" hidden></ul>
+                  </div>
                   <label for="prompt" id="prompt-label">Add a prompt</label
                   ><textarea
                     id="prompt"
@@ -193,7 +199,6 @@
                     placeholder="Add an idea, a requirement, or one more detail…"
                     aria-describedby="prompt-error"
                   ></textarea>
-                  <ul id="draft-attachments" class="draft-attachments" aria-label="Files to send" hidden></ul>
                   <p id="prompt-error" class="field-error" hidden></p>
                   <div id="file-feedback" class="file-feedback" hidden>
                     <p id="file-status" role="status"></p>
@@ -233,9 +238,40 @@
               </p>
             </div>
           </section>
+          <aside id="file-panel" class="file-panel" aria-labelledby="file-panel-title" hidden>
+            <header class="file-panel-header">
+              <div><span class="eyebrow">YOUR MATERIAL</span><h2 id="file-panel-title">Conversation files</h2><span id="file-panel-count" class="file-panel-count">0 files</span></div>
+              <button id="close-files" class="icon-button" type="button" aria-label="Close files" autofocus></button>
+            </header>
+            <div class="file-panel-body">
+              <div id="files-empty" class="files-empty"><span id="files-empty-icon" aria-hidden="true"></span><h3>A place for your files</h3><p>Attach a document or image to ask questions about it.</p><button id="files-choose" class="compile-trigger" type="button">Choose files</button></div>
+              <h3 id="panel-draft-heading" class="file-section-heading" hidden>Ready to send</h3>
+              <ul id="panel-draft-files" class="file-card-list" aria-label="Draft files" hidden></ul>
+              <h3 id="panel-saved-heading" class="file-section-heading" hidden>Attached to messages</h3>
+              <ul id="conversation-files" class="file-card-list" aria-label="Conversation files" hidden></ul>
+            </div>
+          </aside>
         </div>
       </main>
     </div>
+    <dialog id="files-dialog" class="files-dialog" aria-labelledby="files-dialog-title"><h1 id="files-dialog-title" class="visually-hidden">Files</h1></dialog>
+    <dialog id="file-preview-dialog" class="file-preview-dialog" aria-labelledby="preview-title">
+      <header class="file-preview-header">
+        <div><span id="preview-kind" class="eyebrow"></span><h1 id="preview-title"></h1></div>
+        <button id="preview-close" class="icon-button" type="button" data-close="file-preview-dialog" aria-label="Close file preview" autofocus></button>
+      </header>
+      <div class="file-preview-body">
+        <p id="preview-status" class="preview-status" role="status"></p>
+        <button id="preview-retry" class="compile-trigger" type="button" hidden>Try again</button>
+        <img id="preview-image" width="1000" height="700" alt="" hidden />
+        <canvas id="preview-pdf" aria-label="PDF page preview" hidden></canvas>
+        <pre id="preview-text" tabindex="0" aria-label="Document text preview" hidden></pre>
+      </div>
+      <footer class="file-preview-footer">
+        <div id="pdf-controls" class="pdf-controls" hidden><button id="pdf-previous" class="icon-button" type="button" aria-label="Previous PDF page"></button><span id="pdf-page-label" role="status"></span><button id="pdf-next" class="icon-button" type="button" aria-label="Next PDF page"></button></div>
+        <a id="preview-download" class="file-download" hidden><span id="preview-download-label">Download</span></a>
+      </footer>
+    </dialog>
     <dialog
       id="nav-dialog"
       class="nav-dialog"

@@ -97,6 +97,13 @@ export async function uploadAttachment(owner,promptId,attachment,blob) {
   }
   await rpc("register_attachment",{p_id:attachment.id,p_prompt_id:promptId,p_name:attachment.name,p_mime_type:attachment.mimeType,p_size:attachment.size});
 }
+export async function downloadAttachment(id) {
+  const {data,error}=await supabase.from("attachments").select("storage_path").eq("id",id).single();
+  if(error||!data) throw new Error("This file is unavailable in your workspace.");
+  const result=await supabase.storage.from("chat-attachments").download(data.storage_path);
+  if(result.error||!result.data) throw new Error("The file is still uploading or the connection was interrupted. Try again shortly.");
+  return result.data;
+}
 export async function wakeWorker() {
   const {
     data: { session },

@@ -1,6 +1,7 @@
 import { reveal } from "./motion.js";
 import { renderAnswer } from "./render-answer.js";
 import { prepareAttachment, getFile, removeFile } from "./attachment-store.js";
+import { renderAttachmentUI, resetAttachmentUI, showConversationFiles } from "./attachment-ui.js";
 import {
   supabase,
   rpc,
@@ -38,6 +39,7 @@ let staleTab = false;
 let sessionLoading = false;
 let startingGuest = false;
 let extractionController;
+const preparingAttachments=new Map();
 const sidebar = $(".sidebar");
 const mobileLayout = matchMedia("(max-width: 860px)");
 
@@ -271,10 +273,8 @@ function render() {
     );
     item.append(top, element("p", "prompt-content", p.content));
     if (p.attachments?.length) {
-      const files=element("ul","sent-attachments");
-      files.setAttribute("aria-label","Attached files");
-      for (const file of p.attachments) files.append(element("li","",file.name));
-      item.append(files);
+      const files=element("button","message-files-link",`${p.attachments.length} attached file${p.attachments.length===1?"":"s"} · View files ↗`);
+      files.type="button";files.addEventListener("click",showConversationFiles);item.append(files);
     }
     list.append(item);
     for (const job of c.jobs.filter((j) => j.promptIds.at(-1) === p.id))
@@ -368,24 +368,13 @@ function restoreDraft(c) {
   c.draft=typeof saved==="string"?saved:saved?.text||"";
   c.draftAttachments=saved?.attachments||[];
 }
-function renderAttachments(c) {
-  const list=$("#draft-attachments");
-  list.replaceChildren();
-  for (const file of c.draftAttachments||[]) {
-    const chip=element("li","attachment-chip");
-    chip.append(element("span","",file.name));
-    const remove=element("button","", "×");
-    remove.type="button";
-    remove.setAttribute("aria-label",`Remove ${file.name}`);
-    remove.addEventListener("click",()=>{
-      const before=c.draftAttachments;
-      c.draftAttachments=before.filter(a=>a.id!==file.id);
-      if (persist()) { void removeFile(file.id).catch(()=>{}); renderAttachments(c); }
-      else c.draftAttachments=before;
-    });
-    chip.append(remove);list.append(chip);
-  }
-  list.hidden=!list.children.length;
+function renderAttachments(c,animate=false) {
+  renderAttachmentUI(c,Array.from(preparingAttachments.values()),file=>{
+    const before=c.draftAttachments;
+    c.draftAttachments=before.filter(a=>a.id!==file.id);
+    if(persist()) {void removeFile(file.id).catch(()=>{});$("#file-feedback").hidden=true;renderAttachments(c);}
+    else c.draftAttachments=before;
+  },animate);
 }
 $("#new-conversation").addEventListener("click", makeConversation);
 $("#search").addEventListener("input", renderNav);
@@ -421,22 +410,29 @@ $("#attach-files").addEventListener("change", async (event) => {
       if (controller.signal.aborted) break;
       const progress = message => { $("#file-status").textContent = `${index + 1}/${files.length} · ${file.name} · ${message}`; };
       progress("Preparing attachment…");
+      const fileId=crypto.randomUUID();
+      preparingAttachments.set(fileId,{id:fileId,name:file.name,size:file.size,mimeType:file.type,conversationId,draft:true,status:"preparing",statusLabel:"Preparing…"});
+      if(current()?.id===conversationId)renderAttachments(current(),true);
       try {
         const target = state.conversations.find(c => c.id === conversationId);
         if (!target) throw new Error("The original conversation is unavailable. Attach this file again.");
         if ((target.draftAttachments?.length||0)>=5) throw new Error("Send or remove an attachment first. Maximum 5 per message.");
-        const attachment=await prepareAttachment(file,AbortSignal.any([controller.signal,AbortSignal.timeout(120000)]),progress);
+        const attachment=await prepareAttachment(file,AbortSignal.any([controller.signal,AbortSignal.timeout(120000)]),progress,fileId);
         const total=[...target.prompts.flatMap(p=>p.attachments||[]),...(target.draftAttachments||[]),attachment].reduce((n,a)=>n+a.size,0);
         if (total>10485760) { await removeFile(attachment.id); throw new Error("Files exceed 10 MB for this conversation. Start a new conversation."); }
         target.draftAttachments??=[];
         target.draftAttachments.push(attachment);
         if (!persist()) { target.draftAttachments.pop(); await removeFile(attachment.id); throw new Error("Could not save this attachment. Free browser storage and try again."); }
+        preparingAttachments.delete(fileId);
         if (current()?.id === conversationId) renderAttachments(target);
         added++;
       } catch (error) {
         if (controller.signal.aborted) break;
         console.warn("File extraction failed", error);
         errors.push(`${file.name}: ${error.name === "TimeoutError" ? "Extraction timed out. Try a smaller file." : error.message}`);
+      } finally {
+        preparingAttachments.delete(fileId);
+        if(current()?.id===conversationId)renderAttachments(current());
       }
     }
   } finally {
@@ -937,6 +933,7 @@ async function setSession(session) {
   $("#prompt-form").inert = true;
   $("#connection-note").textContent = "Loading your workspace…";
   cloudGeneration++;
+  resetAttachmentUI();
   user = next;
   outbox = [];
   drafts = {};
@@ -1003,6 +1000,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
 });
 connectionText();
 window.addEventListener("online", () => void flushOutbox());
+window.addEventListener("pageshow",event=>{if(event.persisted)render();});
 setInterval(() => {
   if (user && !document.hidden) {
     if (outbox.length) void flushOutbox();
