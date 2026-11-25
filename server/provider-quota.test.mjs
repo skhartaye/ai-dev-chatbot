@@ -51,4 +51,13 @@ test('quota reader uses monitoring-read OAuth, pages complete data, and shares c
   assert.deepEqual(await createQuotaReader({ credentials: () => undefined })(), { status: 'not_connected' });
   const failed = createQuotaReader({ credentials, now: () => now, fetchImpl: async () => new Response('sensitive provider error', { status: 403 }) });
   assert.deepEqual(await failed(), { status: 'unavailable' });
+  let billingCalls = 0;
+  const billingReader = createQuotaReader({ credentials, now: () => now, fetchImpl: async url => {
+    billingCalls++;
+    return url.includes('oauth2') ? Response.json({ access_token: 'test', expires_in: 3600 }) : Response.json({ error: { message: 'This API method requires billing to be enabled.' } }, { status: 403 });
+  } });
+  assert.deepEqual(await billingReader(), {status:'unavailable',reason:'BILLING_REQUIRED'});
+  const callsAfterBlock = billingCalls;
+  await billingReader();
+  assert.equal(billingCalls, callsAfterBlock, 'billing-gated reads must not keep retrying');
 });
