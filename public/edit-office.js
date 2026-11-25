@@ -29,6 +29,17 @@ export function validateEditPlan(plan, files) {
   )
     throw new Error("Ask for between 1 and 50 specific edits at a time.");
   for (const c of plan.changes) {
+    // Models may use JSON primitives for numeric/boolean Excel search values.
+    if (
+      /\.xlsx$/i.test(file.name) &&
+      (typeof c?.find === "boolean" ||
+        (typeof c?.find === "number" && Number.isFinite(c.find)))
+    )
+      c.find = String(c.find);
+    if (!c || typeof c !== "object")
+      throw new Error(
+        "The AI returned an invalid edit. Ask it to propose the changes again.",
+      );
     if (
       typeof c.find !== "string" ||
       !c.find.length ||

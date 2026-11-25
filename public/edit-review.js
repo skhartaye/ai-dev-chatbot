@@ -38,9 +38,7 @@ export function appendEditReviews(node, plans, files) {
       button.addEventListener("click", () => void openReview(plan, file));
       card.append(button);
     } catch (error) {
-      card.append(
-        el("p", error.message + " Ask the AI to propose the edits again."),
-      );
+      card.append(el("p", error.message));
     }
     node.append(card);
   }

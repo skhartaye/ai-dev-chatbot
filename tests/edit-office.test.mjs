@@ -110,7 +110,7 @@ test("Excel edits preserve numeric types and styles, use literal strings, and va
         replace: '=HYPERLINK("https://evil.invalid")',
         count: 1,
       },
-      { sheet: "Orders", find: "3", replace: 7, count: 1 },
+      { sheet: "Orders", find: 3, replace: 7, count: 1 },
     ]),
   );
   const output = unzipSync(new Uint8Array(await result.blob.arrayBuffer()));
