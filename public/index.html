@@ -591,7 +591,6 @@
       </div>
       <section role="tabpanel" aria-labelledby="settings-account-tab" data-settings-panel="account">
         <h2>Account</h2><strong id="settings-email">Guest workspace</strong><p id="settings-account-status">Guest</p><button id="sign-in" class="text-button" type="button">Sign in</button>
-        <details class="settings-details"><summary>Data &amp; privacy</summary><p>Questions and attachments are sent to Google. File changes require review before download.</p></details>
       </section>
       <section role="tabpanel" aria-labelledby="settings-general-tab" data-settings-panel="general" hidden>
         <h2>General <span class="settings-scope">This browser</span></h2>
@@ -603,7 +602,7 @@
         <div class="settings-section-header"><h2>Usage <span>Last 30 days</span></h2><button class="text-button" type="button" id="refresh-usage">Refresh</button></div>
         <div class="quota-status"><span>Provider quota</span><strong>Not available</strong></div>
         <p id="usage-feedback" role="status" aria-atomic="true"></p><div id="usage-summary" hidden></div>
-        <details class="settings-details"><summary>Usage details</summary><p>Token counts come from saved provider reports. Failed attempts may be missing. Gemini limits are shared across the project; a verified quota percentage is unavailable.</p></details>
+        <p class="settings-footnote">Reported tokens exclude unreported attempts. Provider limits are shared across the project.</p>
       </section>
       <section role="tabpanel" aria-labelledby="settings-instructions-tab" data-settings-panel="instructions" hidden>
         <form id="instructions-form" aria-labelledby="instructions-label">
@@ -620,7 +619,8 @@
         <button type="button" class="primary-button" id="export-account">Export account</button>
         <button type="button" class="text-button" id="cancel-account-export" hidden>Cancel export</button>
         <p id="account-export-feedback" role="status" aria-atomic="true"></p>
-        <details class="settings-details"><summary>What’s included</summary><p>Includes saved answers, usage reports and queue history. Word/Excel originals are included when available on this browser; otherwise their saved extracted text is included. The archive lists unavailable originals. Files you downloaded after editing aren’t stored in the account.</p></details>
+        <section class="settings-info" aria-labelledby="export-files-title"><h3 id="export-files-title">Files in your export</h3><p>Word/Excel originals are included when available in this browser; otherwise, saved extracted text is included. The archive lists missing originals. Downloaded edits aren’t stored in your account.</p></section>
+        <section class="settings-info" aria-labelledby="data-privacy-title"><h3 id="data-privacy-title">Data &amp; privacy</h3><p>Questions and attachments are sent to Google. File changes require your review before download.</p></section>
       </section>
     </dialog>
 

@@ -1949,8 +1949,10 @@ dialog > .text-button {
 .settings-control,.quota-status { display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px;border-block-end:1px solid var(--line);font-size:.875rem; }
 .settings-control select { font:inherit;max-inline-size:55%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink); }
 .settings-scope { float:inline-end;color:var(--muted);font-size:.75rem;font-weight:400; }
-.settings-details { margin-block-start:24px;font-size:.8125rem;color:var(--muted); }
-.settings-details summary { cursor:pointer;min-block-size:32px; }
+.settings-info { margin-block-start:24px;padding-block-start:20px;border-block-start:1px solid var(--line); }
+#settings-dialog .settings-info h3 { font-size:.8125rem;letter-spacing:0;margin:0 0 8px;font-weight:650; }
+#settings-dialog .settings-info p { margin:0;line-height:1.7; }
+#settings-dialog .settings-footnote { margin-block-start:20px;line-height:1.7; }
 #usage-feedback:empty,#preferences-feedback:empty { display:none; }
 #settings-dialog #instructions-form { gap:10px; }
 #ai-instructions { inline-size:100%;min-block-size:150px;max-block-size:35dvh;resize:vertical;font:inherit;font-size:1rem;line-height:1.6;padding:14px;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);color:var(--ink);scroll-margin-block:16px; }
