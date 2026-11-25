@@ -1937,9 +1937,23 @@ dialog > .text-button {
 #email-code[aria-invalid=true] { border-color:var(--error); }
 .email-code-actions { display:flex;justify-content:space-between;gap:12px; }
 .email-code-actions button { font-size:.8125rem; }
-#settings-dialog { padding:28px;inline-size:min(580px,calc(100% - 24px));max-block-size:calc(min(100dvh,var(--app-height,100dvh)) - 24px); }
+#settings-dialog { padding:28px;inline-size:min(680px,calc(100% - 24px));max-block-size:calc(min(100dvh,var(--app-height,100dvh)) - 24px); }
 #settings-title { font-size:1.5rem;letter-spacing:-.04em;margin-block:0 24px; }
-#settings-dialog section+section { border-block-start:1px solid var(--line);padding-block-start:24px;margin-block-start:24px; }
+#settings-dialog [role="tabpanel"] { min-block-size:260px;padding-block-start:24px; }
+#settings-dialog [role="tabpanel"][hidden] { display:none; }
+.settings-tabs { display:flex;overflow-x:auto;border-block-end:1px solid var(--line);gap:20px; }
+.settings-tabs button { position:relative;flex:none;background:transparent;border:0;padding:12px 4px;color:var(--muted);font:inherit;font-size:.875rem;cursor:pointer; }
+.settings-tabs button[aria-selected="true"] { color:var(--ink); }
+.settings-tabs button[aria-selected="true"]::after { content:"";position:absolute;inset:auto 0 0;border-block-end:3px solid var(--accent); }
+.settings-control,.quota-status { display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px;border-block-end:1px solid var(--line);font-size:.875rem; }
+.settings-control select { font:inherit;max-inline-size:55%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink); }
+.settings-scope { float:inline-end;color:var(--muted);font-size:.75rem;font-weight:400; }
+.settings-details { margin-block-start:24px;font-size:.8125rem;color:var(--muted); }
+.settings-details summary { cursor:pointer;min-block-size:32px; }
+#usage-feedback:empty,#preferences-feedback:empty { display:none; }
+:root[data-chat-text="large"] .answer-content,:root[data-chat-text="large"] .prompt-content { font-size:1.125rem; }
+:root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before,:root[data-motion="reduce"] *::after { animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important; }
+@media(max-width:480px) { #settings-dialog { padding:24px 18px; } .settings-tabs { gap:16px; } }
 #settings-dialog h2 { font-size:.875rem;letter-spacing:0;margin:0 0 12px; }
 #settings-email { font-size:1rem;overflow-wrap:anywhere;display:block; }
 #settings-dialog p { font-size:.8125rem;line-height:1.8;color:var(--muted);margin-block:10px; }

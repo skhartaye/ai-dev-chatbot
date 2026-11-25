@@ -214,3 +214,9 @@ The header shows Files without a Cloud workspace badge. Guests can Save with ema
 Settings is the single entry for account status, email saving, sign-out and recorded usage. Show the verified email in the sidebar so users can identify the active account. Usage uses one dominant total plus supporting request/input/answer counts, with last-30-days scope and report coverage. Do not present a guessed remaining allowance. Loading, no-data and retry states stay in the Usage section.
 
 Email entry progresses from a labelled email field to one paste-friendly, numeric verification-code field. Keep a resend cooldown and a change-email action. Email templates reuse the green/paper palette with inline CSS and a readable code; they avoid external fonts/assets and retain a direct sign-in link. A verified session, not a successful email send or redirect alone, determines login success.
+
+## Settings refinement
+
+Use Account, General, and Usage tabs inside the native dialog. Keep labels concise and show privacy/reporting context inside disclosures. Selected tabs have an underline and keyboard navigation; initially inactive panels are hidden. General preferences apply to this browser and persist independently of account identity. Large text changes chat content; Reduced motion disables nonessential animation while Follow device preserves the operating-system preference.
+
+Provider quota is unavailable until verified project usage, limits, model and measurement window are connected. Never turn 30-day account token totals into a provider percentage. Keep real account usage separate from project quota.

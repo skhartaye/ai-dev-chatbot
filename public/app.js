@@ -1,3 +1,4 @@
+import { initSettings } from "./settings.js";
 import {appendAnswerActions} from "./answer-actions.js";
 import {requestEmailLink,verifyEmailCode,verifyEmailReturn,emailError} from "./email-auth.js";
 import {summarizeUsage} from "./usage.js";
@@ -944,7 +945,7 @@ function connectionText() {
   $("#sign-in").textContent = user?.is_anonymous?'Save with email':user?'Sign out':'Sign in';
   $("#sign-in").className=!user||user.is_anonymous?'primary-button':'text-button';
   $("#settings-email").textContent=user?.email&&!user.is_anonymous?user.email:user?.is_anonymous?'Guest workspace':'Not signed in';
-  $("#settings-account-status").textContent=user&&!user.is_anonymous?'Email verified. Your chats are available when you sign in on another device.':'Add and verify an email to keep your chats across devices.';
+  $("#settings-account-status").textContent=user&&!user.is_anonymous?'Verified':user?'Guest':'Sign in to save across devices';
   $("#connection-note").textContent = !user
     ? "Send a message to start chatting. No sign-in needed."
     : deliveryError ||
@@ -952,12 +953,13 @@ function connectionText() {
         ? "Syncing saved prompts… Keep this tab open."
         : "Prompts saved online. Keep adding context while AI works.");
 }
+initSettings(document);
 $("#open-settings").addEventListener('click',()=>{$("#nav-dialog").close();connectionText();$("#settings-dialog").showModal();void refreshUsage();});
 $("#refresh-usage").addEventListener('click',()=>void refreshUsage());
 async function refreshUsage() {
   const generation=cloudGeneration,button=$("#refresh-usage"),feedback=$("#usage-feedback"),summary=$("#usage-summary");
   if(button.disabled)return;
-  if(!user){feedback.textContent='No recorded usage yet. Send a message to get started.';summary.hidden=true;return;}
+  if(!user){feedback.textContent='No recorded usage.';summary.hidden=true;return;}
   button.disabled=true;feedback.textContent='Loading usage…';summary.hidden=true;
   try{
     const usage=summarizeUsage(await loadUsage());if(generation!==cloudGeneration)return;
@@ -967,9 +969,9 @@ async function refreshUsage() {
       const group=element('div');group.append(element('dt','',label),element('dd','',value));metrics.append(group);
     }
     summary.append(metrics,element('p','settings-note',`${usage.complete} completed · ${usage.active} queued or answering · ${usage.failed} need${usage.failed===1?'s':''} attention`));
-    if(usage.complete)summary.append(element('p','settings-note',`Token reports available for ${usage.reported} of ${usage.complete} completed requests. Total may include additional model tokens.`));
+    if(usage.reported<usage.complete)summary.append(element('p','settings-note',`Token reports available for ${usage.reported} of ${usage.complete} completed requests. Total may include additional model tokens.`));
     if(usage.models.size)summary.append(element('p','settings-note',`Models used: ${Array.from(usage.models.keys()).join(', ')}`));
-    feedback.textContent=usage.requests?'Usage updated.':'No requests in the last 30 days.';summary.hidden=false;
+    feedback.textContent=usage.requests?'':'No requests in the last 30 days.';summary.hidden=false;
   }catch{if(generation===cloudGeneration)feedback.textContent='Could not load usage. Reconnect and select Refresh.';}
   finally{button.disabled=false;}
 }

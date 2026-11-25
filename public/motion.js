@@ -2,6 +2,7 @@
 export function reveal(node) {
   if (
     !node?.animate ||
+    globalThis.document?.documentElement?.dataset?.motion === "reduce" ||
     !globalThis.matchMedia ||
     matchMedia("(prefers-reduced-motion: reduce)").matches ||
     document.documentElement.classList.contains("keyboard-navigation")

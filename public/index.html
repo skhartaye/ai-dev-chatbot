@@ -582,9 +582,27 @@
     <dialog id="settings-dialog" aria-labelledby="settings-title">
       <button type="button" class="dialog-close icon-button" data-close="settings-dialog" aria-label="Close settings">×</button>
       <h1 id="settings-title">Settings</h1>
-      <section class="settings-account" aria-labelledby="settings-account-title"><h2 id="settings-account-title">Account</h2><strong id="settings-email">Guest workspace</strong><p id="settings-account-status">Add an email to keep your chats across devices.</p><button id="sign-in" class="text-button" type="button">Sign in</button></section>
-      <section class="settings-usage" aria-labelledby="settings-usage-title"><div class="settings-section-header"><h2 id="settings-usage-title">Usage <span>Last 30 days</span></h2><button class="text-button" type="button" id="refresh-usage">Refresh</button></div><p id="usage-feedback" role="status" aria-atomic="true"></p><div id="usage-summary" hidden></div><p class="settings-note">Usage shows saved provider reports, not remaining quota. Failed attempts may use tokens that aren’t included here. Free provider limits are shared.</p></section>
-      <section class="settings-data" aria-labelledby="settings-data-title"><h2 id="settings-data-title">Your files &amp; data</h2><p>Questions and attachments are sent to Google to generate answers. File edits keep the original and require your review before download.</p></section>
+      <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+        <button type="button" role="tab" id="settings-account-tab" aria-selected="true" tabindex="0" data-settings-tab="account">Account</button>
+        <button type="button" role="tab" id="settings-general-tab" aria-selected="false" tabindex="-1" data-settings-tab="general">General</button>
+        <button type="button" role="tab" id="settings-usage-tab" aria-selected="false" tabindex="-1" data-settings-tab="usage">Usage</button>
+      </div>
+      <section role="tabpanel" aria-labelledby="settings-account-tab" data-settings-panel="account">
+        <h2>Account</h2><strong id="settings-email">Guest workspace</strong><p id="settings-account-status">Guest</p><button id="sign-in" class="text-button" type="button">Sign in</button>
+        <details class="settings-details"><summary>Data &amp; privacy</summary><p>Questions and attachments are sent to Google. File changes require review before download.</p></details>
+      </section>
+      <section role="tabpanel" aria-labelledby="settings-general-tab" data-settings-panel="general" hidden>
+        <h2>General <span class="settings-scope">This browser</span></h2>
+        <label class="settings-control" for="settings-text-size">Chat text<select id="settings-text-size"><option value="standard">Standard</option><option value="large">Large</option></select></label>
+        <label class="settings-control" for="settings-motion">Motion<select id="settings-motion"><option value="system">Follow device</option><option value="reduce">Reduced</option></select></label>
+        <p id="preferences-feedback" role="status"></p>
+      </section>
+      <section role="tabpanel" aria-labelledby="settings-usage-tab" data-settings-panel="usage" hidden>
+        <div class="settings-section-header"><h2>Usage <span>Last 30 days</span></h2><button class="text-button" type="button" id="refresh-usage">Refresh</button></div>
+        <div class="quota-status"><span>Provider quota</span><strong>Not available</strong></div>
+        <p id="usage-feedback" role="status" aria-atomic="true"></p><div id="usage-summary" hidden></div>
+        <details class="settings-details"><summary>Usage details</summary><p>Token counts come from saved provider reports. Failed attempts may be missing. Gemini limits are shared across the project; a verified quota percentage is unavailable.</p></details>
+      </section>
     </dialog>
 
     <dialog id="example-dialog" aria-labelledby="example-title">
