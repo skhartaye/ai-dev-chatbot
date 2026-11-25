@@ -2,6 +2,27 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createWorker, retryPlan } from "./worker.mjs";
 
+test("regeneration reuses original prompts, context boundary and attachment scope without overwriting the source",async()=>{
+  const queries=[],calls=[];
+  const db={rpc:async(name,args)=>{calls.push([name,args]);return {data:name==="claim_compilation"?[{id:"new",conversation_id:"chat",regeneration_of:"original",created_at:"2026-11-25",lease_token:"lease"}]:true}},
+    from(table){const q={table};queries.push(q);const chain={
+      select(){return chain},eq(key,value){q[key]=value;return chain},lt(key,value){q.before=value;return chain},in(key,value){q.scope=value;return chain},order(){return chain},
+      single:async()=>({data:{id:"original",created_at:"2026-11-24"}}),
+      then(resolve){resolve({data:table==="prompts"?[{content:"Original question"}]:table==="compilations"?[{id:"prior",answer:"Earlier context"}]:[]})}
+    };return chain}
+  };
+  const worker=createWorker(db,{generate:async input=>{
+    assert.deepEqual(input,["Previous completed answers for context (new prompts below take priority):\nEarlier context","CURRENT USER MESSAGE:\nOriginal question"]);
+    return {text:"New version",model:"test"};
+  }});
+  await worker.tick();worker.stop();
+  assert.equal(queries.find(q=>q.table==="prompts").compilation_id,"original");
+  assert.equal(queries.find(q=>q.before).before,"2026-11-24");
+  assert.deepEqual(queries.find(q=>q.table==="attachments").scope,["original","prior"]);
+  assert.equal(calls.at(-1)[1].p_id,"new");
+  assert.equal(calls.at(-1)[1].p_answer,"New version");
+});
+
 test("backoff respects quota delay, bounds retries, and distinguishes permanent failures", () => {
   assert.deepEqual(
     retryPlan({ status: 429, retryable: true, retryAfter: "120" }, 1),

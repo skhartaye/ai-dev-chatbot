@@ -50,10 +50,16 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
       const [job] = await rpc("claim_compilation");
       if (!job) return;
       try {
+        let turn=job;
+        if(job.regeneration_of) {
+          const {data,error}=await db.from("compilations").select("id,created_at").eq("id",job.regeneration_of).eq("conversation_id",job.conversation_id).single();
+          if(error||!data) throw new Error("Original request unavailable.");
+          turn=data;
+        }
         const { data: prompts, error } = await db
           .from("prompts")
           .select("content,created_at,id")
-          .eq("compilation_id", job.id)
+          .eq("compilation_id", turn.id)
           .order("created_at")
           .order("id");
         if (error || !prompts?.length) {
@@ -66,7 +72,7 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
           .select("answer,created_at,id")
           .eq("conversation_id", job.conversation_id)
           .eq("status", "complete")
-          .lt("created_at", job.created_at)
+          .lt("created_at", turn.created_at)
           .order("created_at")
           .order("id");
         if (historyError) {
@@ -80,7 +86,7 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
             ]
           : [];
         const input = [...context, ...prompts.map((p) => `CURRENT USER MESSAGE:\n${p.content}`)];
-        const attachments=await loadAttachments(db,job.conversation_id,[job.id,...(history||[]).map(j=>j.id)]);
+        const attachments=await loadAttachments(db,job.conversation_id,[turn.id,...(history||[]).map(j=>j.id)]);
         if (input.reduce((size, text) => size + text.length, 0) + attachments.reduce((n,a)=>n+(a.text?.length||0)+(a.details?JSON.stringify(a.details).length:0),0) > 200000) {
           const error = new Error(
             "Start a new conversation to reduce context.",
