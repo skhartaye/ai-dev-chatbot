@@ -1037,7 +1037,7 @@ async function setSession(session) {
     const upgraded=user?.is_anonymous&&!next?.is_anonymous;
     user=next;connectionText();
     if(upgraded){$("#sign-in-dialog").close();announce('Email confirmed. Your workspace is saved to your account.');}
-    if(openEmailOnLoad){openEmailOnLoad=false;openEmailDialog('signin');}
+    if(openEmailOnLoad&&!sessionLoading){openEmailOnLoad=false;openEmailDialog('signin');}
     return;
   }
   sessionLoading = true;
