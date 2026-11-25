@@ -1191,6 +1191,7 @@ supabase.auth.initialize?.().then(({error})=>{
   openEmailDialog('signin');
   $("#sign-in-feedback").className='field-error';
   $("#sign-in-feedback").textContent='This sign-in link could not be opened. Request a fresh link here and open it in this browser.';
+  if(!$("#verify-email-form").hidden)$("#email-code-feedback").textContent='This link could not be opened. Paste the email code here, or request a new code.';
 });
 if(authReturnPending) {
   openEmailOnLoad=false;emailBusy=true;openEmailDialog('signin');
@@ -1198,6 +1199,7 @@ if(authReturnPending) {
   const verification=verifyEmailReturn(supabase.auth,emailReturnURL);
   void verification.then(acceptEmailSession).catch(error=>{
     openEmailDialog('signin');$("#sign-in-feedback").className='field-error';$("#sign-in-feedback").textContent=emailError(error);
+    if(!$("#verify-email-form").hidden)$("#email-code-feedback").textContent=emailError(error);
   }).finally(()=>{authReturnPending=false;emailBusy=false;$("#prompt-form").inert=sessionLoading;});
 }
 connectionText();

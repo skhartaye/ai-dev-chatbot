@@ -5,7 +5,7 @@ import {build} from 'esbuild';
 import {runInContext} from 'node:vm';
 import {JSDOM} from 'jsdom';
 
-for(const mode of ['code','link','expired'])test(`email login ${mode}: verifies session and protects workspace against late initial auth`,async()=>{
+for(const mode of ['code','link','expired','expired-resume'])test(`email login ${mode}: verifies session and protects workspace against late initial auth`,async()=>{
   const result=await build({entryPoints:['public/app.js'],bundle:true,write:false,format:'iife',plugins:[{name:'cloud',setup(b){
     b.onResolve({filter:/\/cloud\.js$/},()=>({path:'cloud',namespace:'fake'}));b.onLoad({filter:/.*/,namespace:'fake'},()=>({contents:`
       window.owner='guest';window.verifications=[];
@@ -14,7 +14,7 @@ for(const mode of ['code','link','expired'])test(`email login ${mode}: verifies 
       signInWithOtp:async()=>({}),verifyOtp:async args=>{
         window.verifications.push(args);if(location.search.includes('token_hash'))throw new Error('Bearer token left in history');
         await new Promise(r=>setTimeout(r,15));
-        if(${mode==='expired'}||args.token==='000000')return {error:{code:'otp_expired'}};
+        if(${mode.startsWith('expired')}||args.token==='000000')return {error:{code:'otp_expired'}};
         window.authChange('SIGNED_IN',signed);return {data:{session:signed}};
       }}};
       export const rpc=async()=>[];
@@ -26,6 +26,7 @@ for(const mode of ['code','link','expired'])test(`email login ${mode}: verifies 
   const dom=new JSDOM(await readFile('public/index.html','utf8'),{url,runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document;
   w.matchMedia=()=>({matches:false,addEventListener(){}});w.setInterval=()=>0;w.HTMLElement.prototype.scrollIntoView=()=>{};
   w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
+  if(mode==='expired-resume')w.sessionStorage.setItem('kahuron.email-challenge',JSON.stringify({email:'login@example.com',type:'email',sentAt:Date.now()}));
   try{
     runInContext(result.outputFiles[0].text,dom.getInternalVMContext());
     await new Promise(r=>setTimeout(r,150));
@@ -37,8 +38,8 @@ for(const mode of ['code','link','expired'])test(`email login ${mode}: verifies 
       d.querySelector('#email-code').value='123456';d.querySelector('#verify-email-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await new Promise(r=>setTimeout(r,150));
     }
     assert.equal(w.location.search.includes('token_hash'),false);
-    if(mode==='expired'){
-      assert.equal(d.querySelector('#sign-in-dialog').open,true);assert.match(d.querySelector('#sign-in-feedback').textContent,/invalid or expired/);assert.equal(d.querySelector('#workspace-name').textContent,'Guest workspace');
+    if(mode.startsWith('expired')){
+      assert.equal(d.querySelector('#sign-in-dialog').open,true);assert.match(d.querySelector(mode==='expired-resume'?'#email-code-feedback':'#sign-in-feedback').textContent,/invalid or expired/);assert.equal(d.querySelector('#workspace-name').textContent,'Guest workspace');
     }else{
       assert.equal(d.querySelector('#workspace-name').textContent,'login@example.com');
       assert.equal(d.querySelector('#conversation-title').textContent,'account workspace');
