@@ -119,25 +119,32 @@ Chrome checks confirmed no horizontal overflow at 320, 390, 768, and 1440 pixels
 visible save controls at a simulated 390x360 keyboard viewport, and draft persistence
 when switching conversations. A physical mobile keyboard has not been tested.
 
-## File text extraction
+## Chat attachments
 
-Attach up to five files, review the extracted text in the draft, then press Send.
-PDF, DOCX, XLSX, CSV, TXT, PNG, JPG and WebP are supported. Legacy DOC/XLS files
-must first be saved as DOCX/XLSX. Files are processed in the browser; only the
-reviewed prompt text is sent through the existing private conversation queue.
-Parsers, OCR workers, fonts and English OCR data are served from this site.
+Attach files, type a question and Send. Chips stay separate from the message.
+PDFs (including scans) and PNG/JPG/WebP are sent as binary inputs to Gemini.
+DOCX, XLSX, CSV and TXT are converted to text behind the scenes. Embedded Office
+images/charts are not included; spreadsheet formulas use saved results.
+Legacy DOC/XLS must first be converted to DOCX/XLSX.
 
-Limits: 10 MB per file, 30 pages per PDF, at most 10 PDF pages requiring OCR,
-30 megapixels per image, two minutes per extraction and 20,000 characters per
-combined draft. Oversized text is rejected rather than silently truncated.
-OCR targets printed English; review recognition errors. Word/Excel extraction
-reads document text and worksheet values, not embedded pictures or charts.
-Spreadsheet formulas use stored results; the browser does not recalculate them.
-Cancellation retains previously extracted files and the existing draft.
+Limits: five files per prompt, 10 MB of attachment payloads per conversation,
+100,000 characters per converted file and 200,000 text characters per AI request.
+The typed question retains its 20,000-character limit. Split larger files or
+start another conversation; text is never silently truncated.
 
-Browser checks covered DOCX body/table text, two XLSX sheets, a two-page text
-PDF, a PNG invoice, an image-only PDF, cancellation, draft reload persistence,
-and the 390-pixel mobile layout under the deployed Content Security Policy.
-The source samples are in tests/fixtures. Run npm test for validation and
-size-limit checks. For a local CSP-matched preview: npm run build, then
-node tests/preview-server.mjs (http://127.0.0.1:4173).
+Draft bytes are held in IndexedDB. Send atomically saves the prompt and its
+file membership, uploads immutable files to private Supabase Storage, then queues
+generation. The database blocks compilation until all files exist with the
+expected size and MIME type. RLS restricts access to the owner. Stable file IDs
+make retries idempotent. Acknowledged browser delivery copies are released.
+
+The server reads files from the current batch and earlier completed batches in
+the same conversation, so follow-up questions do not require reattaching.
+Files are transmitted to Google for AI processing when a message is sent.
+Guest access stays tied to the browser identity; clearing browser data loses it.
+
+Run npm test for automated checks. tests/check-attachments.mjs is an explicit live
+integration check for ownership, immutability, readiness and retry behavior. It
+creates isolated guest test records and a small AI job, and never runs in deploy
+builds. Samples live in tests/fixtures. For a local CSP-matched preview:
+npm run build, then node tests/preview-server.mjs (http://127.0.0.1:4173).

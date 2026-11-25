@@ -132,7 +132,8 @@ function persist() {
   if (user) {
     if (staleTab) return false;
     try {
-      for (const c of state.conversations) drafts[c.id] = {text:c.draft,attachments:c.draftAttachments||[]};
+      for (const c of state.conversations) drafts[c.id] = {text:c.draft,attachments:c.draftAttachments||[],
+        ...(!c.remote?{draftOnly:true,title:c.title,createdAt:c.createdAt}:{})};
       localStorage.setItem(
         cloudStorageKey("delivery"),
         JSON.stringify(outbox),
@@ -950,6 +951,10 @@ async function setSession(session) {
         localStorage.getItem(`kahuron.delivery.${user.id}`) || "[]",
       );
       state.conversations = await listConversations();
+      for (const [id,draft] of Object.entries(drafts)) {
+        if(draft?.draftOnly && (draft.text||draft.attachments?.length) && !state.conversations.some(c=>c.id===id))
+          state.conversations.unshift({id,title:draft.title||"New conversation",createdAt:draft.createdAt||Date.now(),prompts:[],jobs:[],draft:""});
+      }
       for (const c of state.conversations) restoreDraft(c);
       mergeOutbox();
     } catch {

@@ -5,11 +5,12 @@ import { runInContext } from 'node:vm';
 import { build } from 'esbuild';
 import { JSDOM } from 'jsdom';
 
-for (const fails of [false, true]) test(`Guest send ${fails ? 'preserves prompts on connection failure' : 'queues its exact batch without email sign-in'}`, async () => {
+for (const mode of ['send','failure','restore']) test(`Guest attachment flow: ${mode}`, async () => {
+  const fails=mode==='failure';
   const result = await build({entryPoints:['public/app.js'],bundle:true,write:false,format:'iife',plugins:[{
     name:'fake-cloud',setup(b){b.onResolve({filter:/\/cloud\.js$/},()=>({path:'cloud',namespace:'fake'}));b.onLoad({filter:/.*/,namespace:'fake'},()=>({contents:`
       window.calls=[];
-      export const supabase={auth:{onAuthStateChange(){},signInAnonymously:async()=>${fails ? "({data:{session:null},error:new Error('Unavailable')})" : "({data:{session:{user:{id:'owner',is_anonymous:true}}},error:null})"},signOut:async()=>({}),signInWithOtp:async()=>({})}};
+      export const supabase={auth:{onAuthStateChange(cb){if(window.initialSession)cb('INITIAL_SESSION',window.initialSession)},signInAnonymously:async()=>${fails ? "({data:{session:null},error:new Error('Unavailable')})" : "({data:{session:{user:{id:'owner',is_anonymous:true}}},error:null})"},signOut:async()=>({}),signInWithOtp:async()=>({})}};
       export const rpc=async(name,args)=>{window.calls.push({name,args});return []};
       export const listConversations=async()=>[];
       export const loadConversation=async()=>({prompts:[],jobs:[]});
@@ -24,9 +25,22 @@ for (const fails of [false, true]) test(`Guest send ${fails ? 'preserves prompts
   w.HTMLDialogElement.prototype.close=function(){this.open=false};
   w.HTMLElement.prototype.scrollIntoView=()=>{};
   w.setInterval=()=>0;
+  if(mode==='restore') {
+    w.initialSession={user:{id:'owner',is_anonymous:true}};
+    w.history.replaceState({},'', '/?conversation=draft-chat');
+    w.localStorage.setItem('kahuron.drafts.owner',JSON.stringify({'draft-chat':{text:'Question about my file',draftOnly:true,title:'Unsent chat',createdAt:Date.now(),attachments:[{id:'file-id',name:'report.pdf',mimeType:'application/pdf',size:100}]}}));
+  }
   try {
     runInContext(result.outputFiles[0].text,dom.getInternalVMContext());
     const input=w.document.querySelector('#prompt');
+    if(mode==='restore') {
+      await new Promise(resolve=>setTimeout(resolve,100));
+      assert.equal(input.value,'Question about my file');
+      assert.match(w.document.querySelector('#draft-attachments').textContent,/report.pdf/);
+      assert.equal(w.document.querySelector('#prompt-form').inert,false);
+      assert.equal(w.calls.length,0);
+      return;
+    }
     input.value='Answer this saved prompt';
     const enter=opts=>input.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true,...opts}));
     enter({shiftKey:true});

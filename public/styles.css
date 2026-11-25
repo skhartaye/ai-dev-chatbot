@@ -550,7 +550,7 @@ h1 {
 .draft-attachments[hidden] { display:none; }
 .attachment-chip { display:flex;align-items:center;gap:8px;max-inline-size:100%;background:#e1e8d5;border:1px solid #8b947e;border-radius:12px;padding-inline-start:12px;font-size:.8125rem; }
 .attachment-chip span { min-inline-size:0;overflow-wrap:anywhere; }
-.attachment-chip button { flex-shrink:0;min-inline-size:48px;min-block-size:48px;border-radius:12px;color:var(--ink);font-size:1.25rem; }
+.attachment-chip button { flex-shrink:0;min-inline-size:48px;min-block-size:48px;border:0;background:transparent;border-radius:12px;color:var(--ink);font:inherit;font-size:1.25rem;cursor:pointer; }
 .attachment-chip button:hover { background:#b9cbaa; }
 .sent-attachments li { max-inline-size:100%;overflow-wrap:anywhere;background:#e1e8d5;border:1px solid #8b947e;border-radius:10px;padding:8px 12px;font-size:.8125rem; }
 @media (max-width: 1100px) { .composer-tools .shortcut { display: none; } }
