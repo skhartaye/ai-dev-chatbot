@@ -57,15 +57,18 @@ export async function listConversations() {
   }));
 }
 export async function loadConversation(id) {
-  const [prompts, jobs] = await Promise.all([
+  const [prompts, jobs, attachmentResult] = await Promise.all([
     rows("prompts", id),
     rows("compilations", id),
+    supabase.from("attachments").select("*,prompts!inner(conversation_id)").eq("prompts.conversation_id",id),
   ]);
+  if (attachmentResult.error) throw new Error("Could not load conversation attachments.");
   return {
     prompts: prompts.map((p) => ({
       id: p.id,
       content: p.content,
       createdAt: Date.parse(p.created_at),
+      attachments: attachmentResult.data.filter(a=>a.prompt_id===p.id).map(a=>({id:a.id,name:a.name,mimeType:a.mime_type,size:a.size})),
     })),
     jobs: jobs.map((j) => ({
       id: j.id,
@@ -82,6 +85,17 @@ export async function loadConversation(id) {
       usage: j.usage,
     })),
   };
+}
+export async function uploadAttachment(owner,promptId,attachment,blob) {
+  const path=`${owner}/${promptId}/${attachment.id}`;
+  if (!blob) {
+    const existing=await supabase.storage.from("chat-attachments").download(path);
+    if(existing.error||existing.data?.size!==attachment.size) throw new Error(`Attach ${attachment.name} again: this browser no longer has its file bytes.`);
+  } else {
+    const {error}=await supabase.storage.from("chat-attachments").upload(path,blob,{contentType:attachment.mimeType,upsert:false});
+    if (error && String(error.statusCode)!=="409") throw new Error("File upload interrupted. Your prompt is saved and will retry.");
+  }
+  await rpc("register_attachment",{p_id:attachment.id,p_prompt_id:promptId,p_name:attachment.name,p_mime_type:attachment.mimeType,p_size:attachment.size});
 }
 export async function wakeWorker() {
   const {

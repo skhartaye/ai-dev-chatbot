@@ -193,11 +193,12 @@
                     placeholder="Add an idea, a requirement, or one more detail…"
                     aria-describedby="prompt-error"
                   ></textarea>
+                  <ul id="draft-attachments" class="draft-attachments" aria-label="Files to send" hidden></ul>
                   <p id="prompt-error" class="field-error" hidden></p>
                   <div id="file-feedback" class="file-feedback" hidden>
                     <p id="file-status" role="status"></p>
                     <p id="file-errors" class="field-error" role="alert" hidden></p>
-                    <button id="cancel-extraction" class="text-button" type="button" hidden>Cancel extraction</button>
+                    <button id="cancel-extraction" class="text-button" type="button" hidden>Cancel</button>
                   </div>
                   <div class="composer-footer">
                     <div class="composer-tools">
@@ -224,7 +225,7 @@
                       Send <span aria-hidden="true">↑</span>
                     </button>
                   </div>
-                  <p id="file-help" class="file-help">PDF, DOCX, XLSX, CSV, TXT, PNG/JPG/WebP · 10 MB/file. OCR reads printed English.</p>
+                  <p id="file-help" class="file-help">Attach PDF, DOCX, XLSX, CSV, TXT or images, then ask a question. Up to 5 files/message, 10 MB/conversation. Files are sent to Google when you send.</p>
                 </div>
               </form>
               <p id="connection-note" class="local-note" role="status">

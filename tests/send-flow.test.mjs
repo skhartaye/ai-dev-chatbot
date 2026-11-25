@@ -14,6 +14,7 @@ for (const fails of [false, true]) test(`Guest send ${fails ? 'preserves prompts
       export const listConversations=async()=>[];
       export const loadConversation=async()=>({prompts:[],jobs:[]});
       export const wakeWorker=async()=>true;
+      export const uploadAttachment=async()=>{};
     `}));}
   }]});
   const dom = new JSDOM(await readFile('public/index.html','utf8'),{url:'https://kahuron.netlify.app/',runScripts:'outside-only',pretendToBeVisual:true});

@@ -1,12 +1,13 @@
 import { reveal } from "./motion.js";
 import { renderAnswer } from "./render-answer.js";
-import { extractFile, appendExtractedText } from "./extract-file.js";
+import { prepareAttachment, getFile, removeFile } from "./attachment-store.js";
 import {
   supabase,
   rpc,
   listConversations,
   loadConversation,
   wakeWorker,
+  uploadAttachment,
 } from "./cloud.js";
 
 const STORAGE_KEY = "kahuron.preview.v1";
@@ -131,7 +132,7 @@ function persist() {
   if (user) {
     if (staleTab) return false;
     try {
-      for (const c of state.conversations) drafts[c.id] = c.draft;
+      for (const c of state.conversations) drafts[c.id] = {text:c.draft,attachments:c.draftAttachments||[]};
       localStorage.setItem(
         cloudStorageKey("delivery"),
         JSON.stringify(outbox),
@@ -236,6 +237,7 @@ function render() {
   if (document.activeElement !== $("#prompt") || $("#prompt").value !== c.draft)
     $("#prompt").value = c.draft;
   clearError();
+  renderAttachments(c);
   renderNav();
   $("#empty-state").hidden = c.prompts.length > 0;
   $(".conversation").classList.toggle("is-empty", c.prompts.length === 0);
@@ -267,6 +269,12 @@ function render() {
       ),
     );
     item.append(top, element("p", "prompt-content", p.content));
+    if (p.attachments?.length) {
+      const files=element("ul","sent-attachments");
+      files.setAttribute("aria-label","Attached files");
+      for (const file of p.attachments) files.append(element("li","",file.name));
+      item.append(files);
+    }
     list.append(item);
     for (const job of c.jobs.filter((j) => j.promptIds.at(-1) === p.id))
       list.append(answerCard(job, c.jobs.indexOf(job)));
@@ -354,6 +362,30 @@ function clearError() {
   $("#prompt").setCustomValidity("");
   $("#compile-error").hidden = true;
 }
+function restoreDraft(c) {
+  const saved=drafts[c.id];
+  c.draft=typeof saved==="string"?saved:saved?.text||"";
+  c.draftAttachments=saved?.attachments||[];
+}
+function renderAttachments(c) {
+  const list=$("#draft-attachments");
+  list.replaceChildren();
+  for (const file of c.draftAttachments||[]) {
+    const chip=element("li","attachment-chip");
+    chip.append(element("span","",file.name));
+    const remove=element("button","", "×");
+    remove.type="button";
+    remove.setAttribute("aria-label",`Remove ${file.name}`);
+    remove.addEventListener("click",()=>{
+      const before=c.draftAttachments;
+      c.draftAttachments=before.filter(a=>a.id!==file.id);
+      if (persist()) { void removeFile(file.id).catch(()=>{}); renderAttachments(c); }
+      else c.draftAttachments=before;
+    });
+    chip.append(remove);list.append(chip);
+  }
+  list.hidden=!list.children.length;
+}
 $("#new-conversation").addEventListener("click", makeConversation);
 $("#search").addEventListener("input", renderNav);
 $("#prompt").addEventListener("input", () => {
@@ -387,18 +419,18 @@ $("#attach-files").addEventListener("change", async (event) => {
     for (const [index, file] of files.entries()) {
       if (controller.signal.aborted) break;
       const progress = message => { $("#file-status").textContent = `${index + 1}/${files.length} · ${file.name} · ${message}`; };
-      progress("Extracting text…");
+      progress("Preparing attachment…");
       try {
-        const text = await extractFile(file, {
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(120000)]),
-          onProgress: progress,
-        });
         const target = state.conversations.find(c => c.id === conversationId);
         if (!target) throw new Error("The original conversation is unavailable. Attach this file again.");
-        const before = target.draft;
-        target.draft = appendExtractedText(before, file.name, text);
-        if (!persist()) { target.draft = before; throw new Error("Could not save extracted text. Export your draft and free browser storage before trying again."); }
-        if (current()?.id === conversationId) $("#prompt").value = target.draft;
+        if ((target.draftAttachments?.length||0)>=5) throw new Error("Send or remove an attachment first. Maximum 5 per message.");
+        const attachment=await prepareAttachment(file,AbortSignal.any([controller.signal,AbortSignal.timeout(120000)]),progress);
+        const total=[...target.prompts.flatMap(p=>p.attachments||[]),...(target.draftAttachments||[]),attachment].reduce((n,a)=>n+a.size,0);
+        if (total>10485760) { await removeFile(attachment.id); throw new Error("Files exceed 10 MB for this conversation. Start a new conversation."); }
+        target.draftAttachments??=[];
+        target.draftAttachments.push(attachment);
+        if (!persist()) { target.draftAttachments.pop(); await removeFile(attachment.id); throw new Error("Could not save this attachment. Free browser storage and try again."); }
+        if (current()?.id === conversationId) renderAttachments(target);
         added++;
       } catch (error) {
         if (controller.signal.aborted) break;
@@ -410,7 +442,7 @@ $("#attach-files").addEventListener("change", async (event) => {
     extractionController = null;
     $("#attach-files").disabled = false;
     $("#cancel-extraction").hidden = true;
-    $("#file-status").textContent = `${controller.signal.aborted ? "Extraction cancelled. " : ""}${added} file${added === 1 ? "" : "s"} added to ${current()?.id === conversationId ? "your draft" : "the original conversation’s draft"}. Review the text before sending; OCR can make mistakes.`;
+    $("#file-status").textContent = `${controller.signal.aborted ? "Cancelled. " : ""}${added} file${added === 1 ? "" : "s"} attached. Ask a question and press Send.`;
     $("#file-errors").textContent = errors.join("\n");
     $("#file-errors").hidden = !errors.length;
   }
@@ -446,7 +478,7 @@ function savePrompt(send) {
     );
     return;
   }
-  const text = input.value.trim();
+  const text = input.value.trim() || (current()?.draftAttachments?.length ? "Summarize the attached files." : "");
   if (!text) {
     if (send && pending(current()).length) { queueCompilation(); return; }
     $("#prompt-error").textContent = "Add some text before saving your prompt.";
@@ -474,6 +506,7 @@ function savePrompt(send) {
     content: text,
     createdAt: Date.now(),
     syncing: Boolean(user),
+    attachments: (c.draftAttachments||[]).slice(),
   };
   if (user)
     outbox.push({
@@ -487,6 +520,7 @@ function savePrompt(send) {
     });
   c.prompts.push(prompt);
   c.draft = "";
+  c.draftAttachments = [];
   if (c.prompts.length === 1 && !c.remote)
     c.title = Array.from(text).slice(0, 48).join("");
   clearTimeout(saveTimer);
@@ -494,6 +528,7 @@ function savePrompt(send) {
   if (!saved) {
     c.prompts.pop();
     c.draft = text;
+    c.draftAttachments = prompt.attachments;
     if (user) outbox.pop();
   }
   render();
@@ -776,9 +811,10 @@ function mergeOutbox() {
         createdAt: action.prompt?.createdAt || action.job.createdAt,
         prompts: [],
         jobs: [],
-        draft: drafts[action.conversationId] || "",
+        draft: "",
       };
       state.conversations.unshift(c);
+      restoreDraft(c);
     }
     const list = action.type === "prompt" ? c.prompts : c.jobs;
     const item = action.prompt || action.job;
@@ -810,11 +846,15 @@ async function flushOutbox() {
           (c) => c.id === action.conversationId,
         );
         if (conversation) conversation.remote = true;
-        await rpc("save_prompt", {
+        await rpc(action.prompt.attachments?.length ? "save_prompt_with_attachments" : "save_prompt", {
           p_id: action.prompt.id,
           p_conversation_id: action.conversationId,
           p_content: action.prompt.content,
+          ...(action.prompt.attachments?.length?{p_files:action.prompt.attachments}:{}),
         });
+        for (const attachment of action.prompt.attachments||[]) {
+          await uploadAttachment(owner,action.prompt.id,attachment,await getFile(attachment.id));
+        }
       } else
         await rpc("compile_prompts", {
           p_id: action.job.id,
@@ -823,7 +863,9 @@ async function flushOutbox() {
         });
       if (user?.id !== owner || staleTab) break;
       outbox.shift();
-      persist();
+      const persisted=persist();
+      if (persisted && action.type==="prompt")
+        for (const attachment of action.prompt.attachments||[]) void removeFile(attachment.id).catch(()=>{});
       deliveryError = "";
     }
   } catch (error) {
@@ -858,7 +900,7 @@ async function refreshCloud() {
         existing.title = remote.title;
         existing.remote = true;
       } else {
-        remote.draft = drafts[remote.id] || "";
+        restoreDraft(remote);
         state.conversations.push(remote);
       }
     }
@@ -908,7 +950,7 @@ async function setSession(session) {
         localStorage.getItem(`kahuron.delivery.${user.id}`) || "[]",
       );
       state.conversations = await listConversations();
-      for (const c of state.conversations) c.draft = drafts[c.id] || "";
+      for (const c of state.conversations) restoreDraft(c);
       mergeOutbox();
     } catch {
       deliveryError =

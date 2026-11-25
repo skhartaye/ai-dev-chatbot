@@ -1,17 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { validateFile, checkOfficeArchive, appendExtractedText, extractFile } from '../public/extract-file.js';
+import { validateFile, checkOfficeArchive, extractFile } from '../public/extract-file.js';
 
 test('file validation rejects unsupported, empty and oversized input', () => {
   assert.equal(validateFile(new File(['hi'],'note.TXT')),'txt');
   assert.throws(()=>validateFile(new File(['hi'],'old.doc')),/DOCX\/XLSX/);
   assert.throws(()=>validateFile(new File([],'empty.pdf')),/empty/);
   assert.throws(()=>validateFile({name:'big.pdf',size:11*1024*1024}),/10 MB/);
-});
-test('extracted context retains the whole draft and refuses silent truncation', () => {
-  assert.equal(appendExtractedText('Question','note.txt','hello'),'Question\n\n[File: note.txt]\nhello\n[End file]');
-  assert.throws(()=>appendExtractedText('x'.repeat(19999),'note.txt','hello'),/nothing was cut off/);
 });
 test('Office archive checks accept real files and reject excessive expanded data', async () => {
   for (const name of ['sample.docx','sample.xlsx']) {
