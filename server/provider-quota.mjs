@@ -76,7 +76,9 @@ export function createQuotaReader({ credentials = () => readFileSync('/etc/secre
       return rows;
     }
     const [usage, limits] = await Promise.all([series('usage'), series('limit')]);
-    return dailyQuota(usage, limits, time);
+    const report = dailyQuota(usage, limits, time);
+    if (report.status !== 'available') console.warn('Provider quota samples incomplete', { usageSeries: usage.length, limitSeries: limits.length, latestLimitAt: limits.flatMap(s => s.points || []).map(p => p.interval?.endTime).sort().at(-1) || null });
+    return report;
   }
   return async () => {
     if (cached && cacheUntil > now()) return cached;
