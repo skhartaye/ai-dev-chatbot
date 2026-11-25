@@ -229,3 +229,21 @@ with a 30-second deadline. Browsers without worker canvas APIs use the same canv
 renderer on the main thread. Assets/libraries are self-hosted and editing adds no
 paid provider. Core tests inspect actual image pixels, PDF text and page structure;
 the review integration test verifies preview gating and cleanup.
+
+
+### Scanned PDF text rewriting
+
+Ask to replace exact printed words in a scanned PDF. Review edits runs self-hosted,
+on-device English Tesseract OCR, checks confidence (85+), exact occurrence counts,
+background and nearby words, then replaces those pixels and adds selectable black
+Helvetica text. Originals stay untouched; download appears after both previews
+render. Closing the review cancels processing; a two-minute deadline prevents
+unbounded OCR work. Up to 10 phrases on 3 pages, 50-page/10 MB source/output caps,
+rendering bounded to 4 megapixels per page. OCR assets load only for this operation.
+
+Clear horizontal black print on white is supported. Handwriting, uncertain matches,
+coloured/busy backgrounds, annotations/links on edited pages, forms, signed/active
+or encrypted PDFs are rejected. Edited pages are rasterized at up to 200 DPI;
+existing text layers/interactivity on those pages are discarded. Other pages are
+preserved. Font matching, paragraph reflow and secure redaction are not supported.
+No extra OCR API, account or provider charge is introduced.

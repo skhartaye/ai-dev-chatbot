@@ -105,6 +105,10 @@ async function openReview(plan, file) {
       editController = new AbortController();
       const result = await editFile(original, plan, {
         signal: editController.signal,
+        onProgress: (message) => {
+          if (own === generation && activeDialog.open)
+            status.textContent = message;
+        },
       });
       if (own !== generation || !activeDialog.open) return;
       body.replaceChildren();

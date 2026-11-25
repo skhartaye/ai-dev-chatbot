@@ -54,6 +54,7 @@ export function validateVisualPlan(plan, files) {
               "addText",
               "highlight",
               "replaceText",
+              "ocrReplaceText",
               "fillField",
             ]
           : [
@@ -77,7 +78,7 @@ export function validateVisualPlan(plan, files) {
       (!Number.isInteger(c.page) || c.page < 1 || c.page > 50)
     )
       throw new Error("Specify an original PDF page number from 1 to 50.");
-    if (c.op === "replaceText") {
+    if (["replaceText", "ocrReplaceText"].includes(c.op)) {
       if (
         typeof c.find !== "string" ||
         !c.find.length ||

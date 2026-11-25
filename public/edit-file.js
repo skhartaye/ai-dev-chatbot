@@ -9,11 +9,15 @@ export function validateFileEdit(plan, files) {
     ? validateVisualPlan(plan, files)
     : validateEditPlan(plan, files);
 }
-export async function editFile(blob, plan, { signal } = {}) {
+export async function editFile(blob, plan, { signal, onProgress } = {}) {
   validateFileEdit(plan, [{ id: plan.fileId, name: plan.name }]);
   if (!isVisualFile(plan.name)) {
     const { editOffice } = await import("./edit-office.js");
     return editOffice(blob, plan, { signal });
+  }
+  if (plan.changes.some((c) => c.op === "ocrReplaceText")) {
+    const { editScannedPdf } = await import("./edit-scanned-pdf.js");
+    return editScannedPdf(blob, plan, { signal, onProgress });
   }
   // Cross-browser fallback uses the same renderer when worker canvas APIs are absent.
   if (

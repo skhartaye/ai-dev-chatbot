@@ -20,7 +20,13 @@ await build({
   legalComments: "linked",
 });
 await mkdir("public/extraction-assets/licenses", { recursive: true });
+await mkdir("public/extraction-assets/ocr",{recursive:true});
 await Promise.all([
+  cp("node_modules/tesseract.js/dist/worker.min.js","public/extraction-assets/ocr-worker.js"),
+  cp("node_modules/tesseract.js/LICENSE.md","public/extraction-assets/licenses/tesseract.txt"),
+  cp("node_modules/tesseract.js-core/LICENSE","public/extraction-assets/licenses/tesseract-core.txt"),
+  cp("node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz","public/extraction-assets/ocr/eng.traineddata.gz"),
+  ...["", "-simd", "-relaxedsimd"].flatMap(variant=>[".wasm.js",".wasm"].map(ext=>cp(`node_modules/tesseract.js-core/tesseract-core${variant}-lstm${ext}`,`public/extraction-assets/ocr/tesseract-core${variant}-lstm${ext}`))),
   ...["mammoth", "read-excel-file"].map(name => cp(`node_modules/${name}/LICENSE`, `public/extraction-assets/licenses/${name}.txt`)),
   cp("node_modules/pdfjs-dist/LICENSE", "public/extraction-assets/licenses/pdfjs-dist.txt"),
   cp("node_modules/lucide/LICENSE", "public/extraction-assets/licenses/lucide.txt"),
