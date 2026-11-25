@@ -289,3 +289,13 @@ Apply `202611250009_edit_prompts.sql` and deploy the updated worker before relea
 Netlify rewrites `/` to `welcome.html` and `/chat` to `index.html`. Old `/?conversation=…` bookmarks and pre-landing email callbacks are forwarded to `/chat` with their query/hash intact. The local preview server mirrors these routes.
 
 Supabase Site URL and the exact allowed callback are `https://kahuron.netlify.app/chat`. Manual identity linking is enabled with owner approval, and Confirm email remains enabled. Guest email upgrades use `updateUser({email})` to retain ownership; ordinary email access uses `signInWithOtp`. Both return to `/chat`. Open PKCE links in the requesting browser. Existing-account sign-in does not merge guest conversations.
+
+## Authentication emails and verification
+
+Email templates live in `supabase/templates/`. Edit `build.mjs` and run `node supabase/templates/build.mjs` to regenerate the three HTML templates. They use inline, table-based email layout, a code, and an application-owned token-hash link. Apply the generated HTML and subjects to the matching Supabase Auth templates after deploying the app callback handler. Preview with `node tests/email-preview.mjs` on port 4175.
+
+New links verify with `verifyOtp({token_hash,type})`, then establish the returned authenticated session. Token hashes are removed from browser history before any asynchronous work. Existing PKCE links remain supported by the SDK, but users can now paste the emailed code as an alternative. Email-code challenges store only the address, verification type and request time in session storage; codes and tokens are never stored or logged. Account switches discard late requests from the previous auth generation.
+
+## Settings and recorded usage
+
+Settings displays the verified account email, guest-to-email saving or local sign-out, data handling, and the last 30 days of recorded request and token usage. Usage is derived from owner-scoped `compilations` rows through existing RLS and is paginated; no counters or separate usage table are written. Only stored successful provider reports are counted. Missing reports and unrecorded failed-attempt usage are disclosed; no remaining quota or cost is invented.

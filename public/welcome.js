@@ -1,6 +1,6 @@
 // Keep existing conversation bookmarks and pre-landing email links working.
 const url=new URL(location.href);
-if(url.searchParams.has('conversation')||url.searchParams.has('code')||url.searchParams.has('signin')||url.hash.includes('access_token=')||url.hash.includes('error=')) {
+if(url.searchParams.has('conversation')||url.searchParams.has('code')||url.searchParams.has('token_hash')||url.searchParams.has('signin')||url.hash.includes('access_token=')||url.hash.includes('error=')) {
   url.pathname='/chat';location.replace(url.pathname+url.search+url.hash);
 }
 const examples={

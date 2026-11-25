@@ -14,7 +14,7 @@ for (const mode of ['send','failure','restore']) test(`Guest attachment flow: ${
       export const rpc=async(name,args)=>{window.calls.push({name,args});return []};
       export const listConversations=async()=>[];
       export const loadConversation=async()=>({prompts:[],jobs:[]});
-      export const wakeWorker=async()=>true;
+      export const loadUsage=async()=>[];export const wakeWorker=async()=>true;
       export const uploadAttachment=async()=>{};
       export const downloadAttachment=async()=>new Blob(['test']);
     `}));}

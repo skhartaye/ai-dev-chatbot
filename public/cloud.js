@@ -20,6 +20,14 @@ export async function rpc(name, args) {
   if (error) throw new Error(error.message);
   return data;
 }
+export async function loadUsage() {
+  const since=new Date(Date.now()-30*86400000).toISOString(),rows=[];
+  for(let offset=0;;offset+=1000){
+    const {data,error}=await supabase.from('compilations').select('id,status,usage,model,created_at').gte('created_at',since).order('created_at').order('id').range(offset,offset+999);
+    if(error)throw new Error('Could not load usage. Reconnect and select Refresh.');
+    rows.push(...data);if(data.length<1000)return rows;
+  }
+}
 async function rows(table, conversationId) {
   const result = [];
   for (let offset = 0; ; offset += 1000) {

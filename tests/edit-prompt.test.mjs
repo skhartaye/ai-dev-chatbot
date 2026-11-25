@@ -12,7 +12,7 @@ test('prompt edit preserves source and composer draft, validates, and restores b
       export const rpc=async()=>{throw new Error('Offline')};
       export const listConversations=async()=>[{id:'chat',title:'Test',remote:true,createdAt:1,prompts:[],jobs:[],draft:''}];
       export const loadConversation=async()=>({prompts:[{id:'source',content:'Original question',createdAt:1,attachments:[]}],jobs:[{id:'answer',status:'complete',answer:'Original answer',promptIds:['source'],createdAt:2}]});
-      export const wakeWorker=async()=>true;
+      export const loadUsage=async()=>[];export const wakeWorker=async()=>true;
       export const uploadAttachment=async()=>{};export const downloadAttachment=async()=>{};
     `}));}
   }]});

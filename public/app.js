@@ -1,5 +1,6 @@
 import {appendAnswerActions} from "./answer-actions.js";
-import {requestEmailLink,emailError} from "./email-auth.js";
+import {requestEmailLink,verifyEmailCode,verifyEmailReturn,emailError} from "./email-auth.js";
+import {summarizeUsage} from "./usage.js";
 import {requestQueue} from "./request-queue.js";
 import {createChatScroll} from "./chat-scroll.js";
 import { reveal } from "./motion.js";
@@ -13,10 +14,16 @@ import {
   loadConversation,
   wakeWorker,
   uploadAttachment,
+  loadUsage,
 } from "./cloud.js";
 
 const STORAGE_KEY = "kahuron.preview.v1";
 const SEND_INTENT_KEY = "kahuron.send-after-sign-in";
+const emailReturnURL=new URL(location.href);
+if(emailReturnURL.searchParams.has('token_hash')) {
+  const clean=new URL(emailReturnURL);clean.searchParams.delete('token_hash');clean.searchParams.delete('type');
+  history.replaceState({},'',clean.pathname+clean.search+clean.hash);
+}
 const cloudStorageKey = (kind, owner = user.id) => `kahuron.${kind}.${owner}`;
 let entryConversationId = new URLSearchParams(location.search).get(
   "conversation",
@@ -43,6 +50,9 @@ let staleTab = false;
 let sessionLoading = false;
 let startingGuest = false;
 let emailMode='signin',emailBusy=false,emailSentAt=0;
+let emailChallenge=null;
+try {const saved=JSON.parse(sessionStorage.getItem('kahuron.email-challenge')||'null');if(saved&&typeof saved.email==='string'&&['email','email_change'].includes(saved.type)&&Date.now()-saved.sentAt<3600000){emailChallenge=saved;emailSentAt=saved.sentAt}}catch{}
+let authReturnPending=emailReturnURL.searchParams.has('token_hash');
 let openEmailOnLoad=new URLSearchParams(location.search).has('signin');
 let extractionController;
 const preparingAttachments=new Map();
@@ -703,6 +713,7 @@ $("#export").addEventListener("click", () => {
 });
 $("#sign-in").addEventListener("click", () => {
   $("#nav-dialog").close();
+  $("#settings-dialog").close();
   if (user&&!user.is_anonymous) {
     if (outbox.length) {
       announce("Wait for pending work to sync before signing out.");
@@ -716,11 +727,29 @@ $("#sign-in").addEventListener("click", () => {
 function openEmailDialog(mode='signin') {
   emailMode=mode;
   $("#sign-in-title").textContent=mode==='save'?'Save your workspace with email':'Sign in with email';
-  $("#sign-in-description").textContent=mode==='save'?'Confirm your email to keep these chats across devices.':user?.is_anonymous&&state.conversations.some(c=>c.remote)?'This opens your email account’s workspace. Guest chats won’t move to it; export any chats you want to keep first.':'We’ll send you a one-time sign-in link. No password needed.';
+  $("#sign-in-description").textContent=mode==='save'?'Confirm your email to keep these chats across devices.':user?.is_anonymous&&state.conversations.some(c=>c.remote)?'This opens your email account’s workspace. Guest chats won’t move to it; export any chats you want to keep first.':'We’ll email you a code and a sign-in link. No password needed.';
   $("#sign-in-feedback").textContent='';$("#sign-in-feedback").className='';
   $("#email-mode").hidden=!user?.is_anonymous;
   $("#email-mode").textContent=mode==='save'?'Sign in to an existing account':'Save this guest workspace instead';
+  const resume=emailChallenge&&((mode==='save')===(emailChallenge.type==='email_change'))&&(!emailChallenge.ownerId||emailChallenge.ownerId===user?.id);
+  showEmailCode(Boolean(resume));
   $("#sign-in-dialog").showModal();
+}
+function showEmailCode(show) {
+  $("#sign-in-form").hidden=show;$("#verify-email-form").hidden=!show;
+  if(show){$("#email-code-destination").textContent=`Code sent to ${emailChallenge.email}`;$("#email-code").value='';$("#email-code-feedback").textContent='Paste the code from the newest email.';$("#email-mode").hidden=true;}
+}
+function saveEmailChallenge(value) {
+  emailChallenge=value;
+  try{if(value)sessionStorage.setItem('kahuron.email-challenge',JSON.stringify(value));else sessionStorage.removeItem('kahuron.email-challenge')}catch{}
+}
+async function acceptEmailSession(data) {
+  let session=data?.session;
+  if(!session){const result=await supabase.auth.refreshSession();if(result.error)throw result.error;session=result.data.session;}
+  if(!session?.user?.email_confirmed_at||session.user.is_anonymous)throw {code:'confirmation_pending'};
+  saveEmailChallenge(null);authReturnPending=false;
+  await setSession(session);$("#sign-in-dialog").close();
+  announce(`Signed in as ${session.user.email}.`);
 }
 $("#email-mode").addEventListener('click',()=>{if(!emailBusy)openEmailDialog(emailMode==='save'?'signin':'save');});
 $("#sign-in-form").addEventListener("submit", async (event) => {
@@ -728,25 +757,45 @@ $("#sign-in-form").addEventListener("submit", async (event) => {
   if(emailBusy)return;
   if(Date.now()-emailSentAt<60000){$("#sign-in-feedback").textContent='A link was just sent. Check your inbox and spam folder, or wait a minute to resend.';return;}
   if(outbox.length||sessionLoading){$("#sign-in-feedback").textContent='Wait for your saved messages to sync, then try again.';return;}
+  const email=$("#email").value.trim(),upgrade=emailMode==='save'&&Boolean(user?.is_anonymous),ownerId=user?.id;
   emailBusy=true;
   const button = event.currentTarget.querySelector("[type=submit]");
   button.disabled = true;
   button.textContent = "Sending…";
+  if(!$("#verify-email-form").hidden)$("#email-code-feedback").textContent='Sending a fresh code…';
   try {
-    await requestEmailLink(supabase.auth,$("#email").value.trim(),{upgrade:emailMode==='save'&&user?.is_anonymous});
-    emailSentAt=Date.now();$("#sign-in-feedback").className='';
+    await requestEmailLink(supabase.auth,email,{upgrade});
+    if(upgrade&&ownerId!==user?.id)throw {code:'session_changed'};
+    emailSentAt=Date.now();saveEmailChallenge({email,type:upgrade?'email_change':'email',sentAt:emailSentAt,...(upgrade?{ownerId}:{})});showEmailCode(true);$("#email-code").focus();$("#sign-in-feedback").className='';
     $("#sign-in-feedback").textContent =
       emailMode==='save'?"Check your inbox and spam folder for the confirmation link. Open it in this browser to save this workspace.":"Check your inbox and spam folder. Open the sign-in link in this browser to continue.";
   } catch (error) {
     $("#sign-in-feedback").className='field-error';
     $("#sign-in-feedback").textContent =
       emailError(error);
+    if(!$("#verify-email-form").hidden)$("#email-code-feedback").textContent=emailError(error);
   } finally {
     emailBusy=false;
     button.disabled = false;
-    button.textContent = "Send sign-in link";
+    button.textContent = "Send code";
   }
 });
+$("#verify-email-form").addEventListener('submit',async event=>{
+  event.preventDefault();if(emailBusy||!emailChallenge)return;
+  const field=$("#email-code"),button=event.currentTarget.querySelector('[type=submit]');
+  if(outbox.length||sessionLoading){$("#email-code-feedback").textContent='Wait for pending messages to sync, then verify.';return;}
+  if(emailChallenge.ownerId&&emailChallenge.ownerId!==user?.id){$("#email-code-feedback").textContent='This guest session changed. Use Change email to request a fresh code.';return;}
+  emailBusy=true;button.disabled=true;button.textContent='Verifying…';field.removeAttribute('aria-invalid');
+  try {await acceptEmailSession(await verifyEmailCode(supabase.auth,{...emailChallenge,token:field.value}));}
+  catch(error){$("#email-code-feedback").textContent=error.code==='confirmation_pending'?'Confirm the email change using both confirmation emails, then try signing in.':emailError(error);field.setAttribute('aria-invalid','true');field.focus();}
+  finally{emailBusy=false;button.disabled=false;button.textContent='Verify & sign in';}
+});
+$("#resend-email-code").addEventListener('click',()=>{
+  if(emailBusy||!emailChallenge)return;
+  if(Date.now()-emailSentAt<60000){$("#email-code-feedback").textContent='Check your inbox and spam folder. Wait a minute before resending.';return;}
+  $("#email").value=emailChallenge.email;$("#sign-in-form").requestSubmit();
+});
+$("#change-email").addEventListener('click',()=>{if(!emailBusy){saveEmailChallenge(null);showEmailCode(false);$("#email-mode").hidden=!user?.is_anonymous;$("#email").focus();}});
 for (const button of document.querySelectorAll("[data-close]"))
   button.addEventListener("click", () =>
     document.getElementById(button.dataset.close).close(),
@@ -888,16 +937,41 @@ function regenerateAnswer(c,source) {
   render();announce("Regeneration queued. Your original answer is kept.");void flushOutbox();
 }
 function connectionText() {
-  $("#workspace-name").textContent = user?.is_anonymous ? "Guest workspace" : "Your workspace";
-  $("#workspace-status").textContent = user && !user.is_anonymous ? "Saved across devices" : "Saved in this browser";
+  $("#workspace-name").textContent = user?.is_anonymous ? "Guest workspace" : user?.email||"Your workspace";
+  $("#workspace-status").textContent = user && !user.is_anonymous ? "Signed in · Saved across devices" : "Saved in this browser";
+  $(".account-row .avatar").textContent=user?.email&&!user.is_anonymous?user.email[0].toUpperCase():'G';
   $("#sign-in").hidden = false;
   $("#sign-in").textContent = user?.is_anonymous?'Save with email':user?'Sign out':'Sign in';
+  $("#sign-in").className=!user||user.is_anonymous?'primary-button':'text-button';
+  $("#settings-email").textContent=user?.email&&!user.is_anonymous?user.email:user?.is_anonymous?'Guest workspace':'Not signed in';
+  $("#settings-account-status").textContent=user&&!user.is_anonymous?'Email verified. Your chats are available when you sign in on another device.':'Add and verify an email to keep your chats across devices.';
   $("#connection-note").textContent = !user
     ? "Send a message to start chatting. No sign-in needed."
     : deliveryError ||
       (outbox.length
         ? "Syncing saved prompts… Keep this tab open."
         : "Prompts saved online. Keep adding context while AI works.");
+}
+$("#open-settings").addEventListener('click',()=>{$("#nav-dialog").close();connectionText();$("#settings-dialog").showModal();void refreshUsage();});
+$("#refresh-usage").addEventListener('click',()=>void refreshUsage());
+async function refreshUsage() {
+  const generation=cloudGeneration,button=$("#refresh-usage"),feedback=$("#usage-feedback"),summary=$("#usage-summary");
+  if(button.disabled)return;
+  if(!user){feedback.textContent='No recorded usage yet. Send a message to get started.';summary.hidden=true;return;}
+  button.disabled=true;feedback.textContent='Loading usage…';summary.hidden=true;
+  try{
+    const usage=summarizeUsage(await loadUsage());if(generation!==cloudGeneration)return;
+    summary.replaceChildren();const number=new Intl.NumberFormat();
+    const metrics=element('dl','usage-metrics');
+    for(const [label,value]of[['Total reported tokens',usage.reported?number.format(usage.total):'—'],['Requests',number.format(usage.requests)],['Input tokens',usage.reported?number.format(usage.input):'—'],['Answer tokens',usage.reported?number.format(usage.output):'—']]){
+      const group=element('div');group.append(element('dt','',label),element('dd','',value));metrics.append(group);
+    }
+    summary.append(metrics,element('p','settings-note',`${usage.complete} completed · ${usage.active} queued or answering · ${usage.failed} need${usage.failed===1?'s':''} attention`));
+    if(usage.complete)summary.append(element('p','settings-note',`Token reports available for ${usage.reported} of ${usage.complete} completed requests. Total may include additional model tokens.`));
+    if(usage.models.size)summary.append(element('p','settings-note',`Models used: ${Array.from(usage.models.keys()).join(', ')}`));
+    feedback.textContent=usage.requests?'Usage updated.':'No requests in the last 30 days.';summary.hidden=false;
+  }catch{if(generation===cloudGeneration)feedback.textContent='Could not load usage. Reconnect and select Refresh.';}
+  finally{button.disabled=false;}
 }
 function mergeOutbox() {
   for (const action of outbox) {
@@ -1034,7 +1108,7 @@ async function refreshCloud() {
 async function setSession(session) {
   const next = session?.user || null;
   if (next?.id === user?.id) {
-    const upgraded=user?.is_anonymous&&!next?.is_anonymous;
+    const upgraded=user?.is_anonymous&&!next?.is_anonymous&&Boolean(next?.email_confirmed_at);
     user=next;connectionText();
     if(upgraded){$("#sign-in-dialog").close();announce('Email confirmed. Your workspace is saved to your account.');}
     if(openEmailOnLoad&&!sessionLoading){openEmailOnLoad=false;openEmailDialog('signin');}
@@ -1043,7 +1117,7 @@ async function setSession(session) {
   sessionLoading = true;
   $("#prompt-form").inert = true;
   $("#connection-note").textContent = "Loading your workspace…";
-  cloudGeneration++;
+  const generation=++cloudGeneration;
   resetAttachmentUI();
   user = next;
   outbox = [];
@@ -1058,7 +1132,9 @@ async function setSession(session) {
       outbox = JSON.parse(
         localStorage.getItem(`kahuron.delivery.${user.id}`) || "[]",
       );
-      state.conversations = await listConversations();
+      const conversations=await listConversations();
+      if(generation!==cloudGeneration)return;
+      state.conversations=conversations;
       for (const [id,draft] of Object.entries(drafts)) {
         if(draft?.draftOnly && (draft.text||draft.attachments?.length) && !state.conversations.some(c=>c.id===id))
           state.conversations.unshift({id,title:draft.title||"New conversation",createdAt:draft.createdAt||Date.now(),prompts:[],jobs:[],draft:""});
@@ -1066,6 +1142,7 @@ async function setSession(session) {
       for (const c of state.conversations) restoreDraft(c);
       mergeOutbox();
     } catch {
+      if(generation!==cloudGeneration)return;
       deliveryError =
         "Could not load your workspace. Reconnect and reload to try again.";
     }
@@ -1090,10 +1167,9 @@ async function setSession(session) {
     } catch {
       deliveryError = "Your saved prompts could not be queued. Reload this tab to try again.";
     }
-    $("#sign-in-dialog").close();
   } else state = load();
   sessionLoading = false;
-  $("#prompt-form").inert = false;
+  $("#prompt-form").inert = authReturnPending;
   if (!state.conversations.length) makeConversation(false);
   else {
     const entry = state.conversations.find((c) => c.id === entryConversationId);
@@ -1116,6 +1192,14 @@ supabase.auth.initialize?.().then(({error})=>{
   $("#sign-in-feedback").className='field-error';
   $("#sign-in-feedback").textContent='This sign-in link could not be opened. Request a fresh link here and open it in this browser.';
 });
+if(authReturnPending) {
+  openEmailOnLoad=false;emailBusy=true;openEmailDialog('signin');
+  $("#sign-in-feedback").textContent='Verifying your email…';$("#prompt-form").inert=true;
+  const verification=verifyEmailReturn(supabase.auth,emailReturnURL);
+  void verification.then(acceptEmailSession).catch(error=>{
+    openEmailDialog('signin');$("#sign-in-feedback").className='field-error';$("#sign-in-feedback").textContent=emailError(error);
+  }).finally(()=>{authReturnPending=false;emailBusy=false;$("#prompt-form").inert=sessionLoading;});
+}
 connectionText();
 window.addEventListener("online", () => void flushOutbox());
 window.addEventListener("pageshow",event=>{if(event.persisted)render();});

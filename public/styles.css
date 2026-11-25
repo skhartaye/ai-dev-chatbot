@@ -777,6 +777,7 @@ dialog form {
   display: grid;
   gap: 12px;
 }
+dialog form[hidden] { display: none; }
 dialog label {
   font-size: 0.875rem;
   font-weight: 650;
@@ -1927,6 +1928,30 @@ dialog > .text-button {
 #sign-in-feedback { font-size: .8125rem; line-height: 1.7; margin-block: 14px 8px; color: var(--accent); }
 #sign-in-feedback.field-error { color: var(--error); }
 #email-mode { font-size: .8125rem; text-align: start; }
+#sign-in-dialog { max-block-size: calc(min(100dvh,var(--app-height,100dvh)) - 24px); }
+#sign-in-dialog::backdrop,#settings-dialog::backdrop { overflow:hidden;overscroll-behavior:contain; }
+#verify-email-form { display:grid;gap:12px; }
+#verify-email-form[hidden] { display:none; }
+#email-code { inline-size:100%;padding:14px;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface-soft);color:var(--ink);font:1.5rem/1.3 Consolas,monospace;letter-spacing:.16em; }
+#email-code-destination,#email-code-feedback { font-size:.8125rem;line-height:1.7;color:var(--muted);overflow-wrap:anywhere; }
+#email-code[aria-invalid=true] { border-color:var(--error); }
+.email-code-actions { display:flex;justify-content:space-between;gap:12px; }
+.email-code-actions button { font-size:.8125rem; }
+#settings-dialog { padding:28px;inline-size:min(580px,calc(100% - 24px));max-block-size:calc(min(100dvh,var(--app-height,100dvh)) - 24px); }
+#settings-title { font-size:1.5rem;letter-spacing:-.04em;margin-block:0 24px; }
+#settings-dialog section+section { border-block-start:1px solid var(--line);padding-block-start:24px;margin-block-start:24px; }
+#settings-dialog h2 { font-size:.875rem;letter-spacing:0;margin:0 0 12px; }
+#settings-email { font-size:1rem;overflow-wrap:anywhere;display:block; }
+#settings-dialog p { font-size:.8125rem;line-height:1.8;color:var(--muted);margin-block:10px; }
+.settings-section-header { display:flex;align-items:center;justify-content:space-between;gap:16px; }
+.settings-section-header h2 span { display:block;font-size:.75rem;color:var(--muted);font-weight:400;margin-block-start:5px; }
+.settings-section-header button { font-size:.75rem; }
+.usage-metrics { display:grid;grid-template-columns:1fr 1fr;gap:20px 24px;margin:18px 0; }
+.usage-metrics div:first-child { grid-column:1/-1;background:var(--accent-soft);border:1px solid var(--line);border-radius:14px;padding:18px; }
+.usage-metrics dt { font-size:.75rem;color:var(--muted); }
+.usage-metrics dd { margin:6px 0 0;font-size:1.25rem;font-weight:750;font-variant-numeric:tabular-nums; }
+.usage-metrics div:first-child dd { font-size:2rem;letter-spacing:-.04em; }
+.account-row strong { overflow-wrap:anywhere; }
 #rename-dialog {
   padding: 28px;
   inline-size: min(440px, calc(100% - 24px));

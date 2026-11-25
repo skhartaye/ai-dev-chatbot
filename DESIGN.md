@@ -208,3 +208,9 @@ Show Edit on saved sent prompts. Open a labelled native dialog with the full exi
 The home route `/` serves `welcome.html`; `/chat` serves the existing workspace. Keep old root conversation bookmarks and email callbacks working through the landing router. Landing content uses the existing Manrope face, green semantic tokens, paper surfaces and restrained shadows; examples are explicitly fictional and do not call AI. Keep Start chatting primary, with email sign-in optional. Use native links, pressed-state sample buttons, and reduced-motion-aware entrance animation.
 
 The header shows Files without a Cloud workspace badge. Guests can Save with email, using the existing user identity rather than creating a separate workspace. Existing-account sign-in warns guest users that chats are not automatically merged. Same-ID auth updates refresh the account controls without resetting the outbox or conversation. Sign-out waits for pending delivery.
+
+## Account settings and authentication
+
+Settings is the single entry for account status, email saving, sign-out and recorded usage. Show the verified email in the sidebar so users can identify the active account. Usage uses one dominant total plus supporting request/input/answer counts, with last-30-days scope and report coverage. Do not present a guessed remaining allowance. Loading, no-data and retry states stay in the Usage section.
+
+Email entry progresses from a labelled email field to one paste-friendly, numeric verification-code field. Keep a resend cooldown and a change-email action. Email templates reuse the green/paper palette with inline CSS and a readable code; they avoid external fonts/assets and retain a direct sign-in link. A verified session, not a successful email send or redirect alone, determines login success.

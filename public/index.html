@@ -67,9 +67,7 @@
               <strong id="workspace-name">Local workspace</strong
               ><span id="workspace-status">Saved on this device</span>
             </div>
-            <button id="sign-in" class="text-button" type="button" hidden>
-              Sign in
-            </button>
+            <button id="open-settings" class="text-button" type="button" aria-haspopup="dialog">Settings</button>
           </div>
         </div>
       </aside>
@@ -556,21 +554,37 @@
           id="email"
           name="email"
           type="email"
-          autocomplete="email"
+          autocomplete="username"
           spellcheck="false"
           autocapitalize="none"
           required
           aria-describedby="sign-in-feedback"
           placeholder="you@example.com"
         /><button class="primary-button" type="submit">
-          Send sign-in link
+          Send code
         </button>
         <p id="sign-in-feedback" role="status" aria-atomic="true"></p>
       </form>
+      <form id="verify-email-form" action="/" method="post" aria-labelledby="sign-in-title" hidden>
+        <p id="email-code-destination"></p>
+        <label for="email-code">Verification code</label>
+        <input id="email-code" name="verification_code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="20" required aria-describedby="email-code-feedback" enterkeyhint="done" spellcheck="false" />
+        <button type="submit" class="primary-button">Verify &amp; sign in</button>
+        <p id="email-code-feedback" role="status" aria-atomic="true"></p>
+        <div class="email-code-actions"><button type="button" class="text-button" id="resend-email-code">Resend code</button><button type="button" class="text-button" id="change-email">Change email</button></div>
+      </form>
       <button class="text-button" id="email-mode" type="button" hidden>Sign in to an existing account</button>
       <button class="text-button" type="button" data-close="sign-in-dialog">
-        Continue locally
+        Back to chat
       </button>
+    </dialog>
+
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+      <button type="button" class="dialog-close icon-button" data-close="settings-dialog" aria-label="Close settings">×</button>
+      <h1 id="settings-title">Settings</h1>
+      <section class="settings-account" aria-labelledby="settings-account-title"><h2 id="settings-account-title">Account</h2><strong id="settings-email">Guest workspace</strong><p id="settings-account-status">Add an email to keep your chats across devices.</p><button id="sign-in" class="text-button" type="button">Sign in</button></section>
+      <section class="settings-usage" aria-labelledby="settings-usage-title"><div class="settings-section-header"><h2 id="settings-usage-title">Usage <span>Last 30 days</span></h2><button class="text-button" type="button" id="refresh-usage">Refresh</button></div><p id="usage-feedback" role="status" aria-atomic="true"></p><div id="usage-summary" hidden></div><p class="settings-note">Usage shows saved provider reports, not remaining quota. Failed attempts may use tokens that aren’t included here. Free provider limits are shared.</p></section>
+      <section class="settings-data" aria-labelledby="settings-data-title"><h2 id="settings-data-title">Your files &amp; data</h2><p>Questions and attachments are sent to Google to generate answers. File edits keep the original and require your review before download.</p></section>
     </dialog>
 
     <dialog id="example-dialog" aria-labelledby="example-title">
