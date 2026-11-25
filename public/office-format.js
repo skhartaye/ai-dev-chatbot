@@ -37,6 +37,12 @@ export function validateFormat(format, word = false) {
         "numberFormat",
       ];
   for (const [key, value] of Object.entries(format)) {
+    if (
+      ["color", "fill"].includes(key) &&
+      typeof value === "string" &&
+      /^[\da-f]{6}$/i.test(value)
+    )
+      format[key] = "#" + value;
     if (!allowed.includes(key))
       throw new Error(`Unsupported formatting: ${key}.`);
     if (
@@ -44,7 +50,7 @@ export function validateFormat(format, word = false) {
       typeof value !== "boolean"
     )
       throw new Error(`${key} must be true or false.`);
-    if (["color", "fill"].includes(key) && !/^#[\da-f]{6}$/i.test(value))
+    if (["color", "fill"].includes(key) && !/^#[\da-f]{6}$/i.test(format[key]))
       throw new Error("Use a six-digit hex color such as #315B3E.");
     if (
       key === "fontSize" &&

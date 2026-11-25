@@ -51,7 +51,7 @@ test("Word formatting isolates the selected text, preserving surrounding styles 
         format: {
           bold: true,
           fontSize: 18,
-          color: "#315B3E",
+          color: "315B3E",
           alignment: "center",
         },
       },

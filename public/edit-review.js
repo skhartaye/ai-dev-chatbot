@@ -118,14 +118,32 @@ async function openReview(plan, file) {
           );
         body.append(row);
       }
-      if (result.calculations?.length)
-        body.append(
+      if (result.calculations?.length) {
+        const details = el("details", null, "formula-results");
+        details.append(
           el(
-            "p",
-            `${result.calculations.length} formula${result.calculations.length === 1 ? "" : "s"} recalculated and checked.`,
-            "edit-result",
+            "summary",
+            `${result.calculations.length} formula${result.calculations.length === 1 ? "" : "s"} recalculated and checked`,
           ),
         );
+        const list = el("ul");
+        for (const calculation of result.calculations.slice(0, 50))
+          list.append(
+            el(
+              "li",
+              `${calculation.sheet}!${calculation.address} = ${calculation.type === "b" ? (calculation.value === "1" ? "TRUE" : "FALSE") : calculation.value}`,
+            ),
+          );
+        details.append(list);
+        if (result.calculations.length > 50)
+          details.append(
+            el(
+              "p",
+              "Showing the first 50 results. All formula results are included in the download.",
+            ),
+          );
+        body.append(details);
+      }
       if (url) URL.revokeObjectURL(url);
       url = URL.createObjectURL(result.blob);
       download.href = url;
