@@ -3,6 +3,22 @@
   publish = "public"
 
 # The API and background worker are hosted separately on Render.
+[[redirects]]
+  from = "/"
+  to = "/welcome.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/chat"
+  to = "/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/chat/"
+  to = "/chat"
+  status = 301
 
 [[headers]]
   for = "/*"

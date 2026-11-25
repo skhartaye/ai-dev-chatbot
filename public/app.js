@@ -1,4 +1,5 @@
 import {appendAnswerActions} from "./answer-actions.js";
+import {requestEmailLink,emailError} from "./email-auth.js";
 import {requestQueue} from "./request-queue.js";
 import {createChatScroll} from "./chat-scroll.js";
 import { reveal } from "./motion.js";
@@ -41,6 +42,8 @@ let deliveryError = "";
 let staleTab = false;
 let sessionLoading = false;
 let startingGuest = false;
+let emailMode='signin',emailBusy=false,emailSentAt=0;
+let openEmailOnLoad=new URLSearchParams(location.search).has('signin');
 let extractionController;
 const preparingAttachments=new Map();
 const chatScroll=createChatScroll($("#message-area"),$("#prompt-list"),$("#jump-to-latest"));
@@ -191,6 +194,8 @@ function navigate(id, replace = false) {
   if (!extractionController) $("#file-feedback").hidden = true;
   $("#nav-dialog").close();
   const url = new URL(location.href);
+  url.pathname='/chat';
+  url.searchParams.delete('signin');
   url.searchParams.set("conversation", id);
   history[replace ? "replaceState" : "pushState"]({}, "", url);
   render();
@@ -698,7 +703,7 @@ $("#export").addEventListener("click", () => {
 });
 $("#sign-in").addEventListener("click", () => {
   $("#nav-dialog").close();
-  if (user) {
+  if (user&&!user.is_anonymous) {
     if (outbox.length) {
       announce("Wait for pending work to sync before signing out.");
       return;
@@ -706,25 +711,38 @@ $("#sign-in").addEventListener("click", () => {
     void supabase.auth.signOut().then(({ error }) => {
       if (error) announce("Could not sign out. Please try again.");
     });
-  } else $("#sign-in-dialog").showModal();
+  } else openEmailDialog(user?.is_anonymous?'save':'signin');
 });
+function openEmailDialog(mode='signin') {
+  emailMode=mode;
+  $("#sign-in-title").textContent=mode==='save'?'Save your workspace with email':'Sign in with email';
+  $("#sign-in-description").textContent=mode==='save'?'Confirm your email to keep these chats across devices.':user?.is_anonymous&&state.conversations.some(c=>c.remote)?'This opens your email account’s workspace. Guest chats won’t move to it; export any chats you want to keep first.':'We’ll send you a one-time sign-in link. No password needed.';
+  $("#sign-in-feedback").textContent='';$("#sign-in-feedback").className='';
+  $("#email-mode").hidden=!user?.is_anonymous;
+  $("#email-mode").textContent=mode==='save'?'Sign in to an existing account':'Save this guest workspace instead';
+  $("#sign-in-dialog").showModal();
+}
+$("#email-mode").addEventListener('click',()=>{if(!emailBusy)openEmailDialog(emailMode==='save'?'signin':'save');});
 $("#sign-in-form").addEventListener("submit", async (event) => {
   event.preventDefault();
+  if(emailBusy)return;
+  if(Date.now()-emailSentAt<60000){$("#sign-in-feedback").textContent='A link was just sent. Check your inbox and spam folder, or wait a minute to resend.';return;}
+  if(outbox.length||sessionLoading){$("#sign-in-feedback").textContent='Wait for your saved messages to sync, then try again.';return;}
+  emailBusy=true;
   const button = event.currentTarget.querySelector("[type=submit]");
   button.disabled = true;
   button.textContent = "Sending…";
   try {
-    const { error } = await supabase.auth.signInWithOtp({
-      email: $("#email").value.trim(),
-      options: { emailRedirectTo: "https://kahuron.netlify.app/" },
-    });
-    if (error) throw error;
+    await requestEmailLink(supabase.auth,$("#email").value.trim(),{upgrade:emailMode==='save'&&user?.is_anonymous});
+    emailSentAt=Date.now();$("#sign-in-feedback").className='';
     $("#sign-in-feedback").textContent =
-      "Check your email for a sign-in link. Open it in this browser to continue.";
+      emailMode==='save'?"Check your inbox and spam folder for the confirmation link. Open it in this browser to save this workspace.":"Check your inbox and spam folder. Open the sign-in link in this browser to continue.";
   } catch (error) {
+    $("#sign-in-feedback").className='field-error';
     $("#sign-in-feedback").textContent =
-      error.message || "Could not send the link. Please try again.";
+      emailError(error);
   } finally {
+    emailBusy=false;
     button.disabled = false;
     button.textContent = "Send sign-in link";
   }
@@ -870,13 +888,10 @@ function regenerateAnswer(c,source) {
   render();announce("Regeneration queued. Your original answer is kept.");void flushOutbox();
 }
 function connectionText() {
-  $("#connection-status").textContent = user
-    ? "Cloud workspace"
-    : "Local preview";
   $("#workspace-name").textContent = user?.is_anonymous ? "Guest workspace" : "Your workspace";
   $("#workspace-status").textContent = user && !user.is_anonymous ? "Saved across devices" : "Saved in this browser";
-  $("#sign-in").hidden = true;
-  $("#sign-in").textContent = user ? "Sign out" : "Sign in";
+  $("#sign-in").hidden = false;
+  $("#sign-in").textContent = user?.is_anonymous?'Save with email':user?'Sign out':'Sign in';
   $("#connection-note").textContent = !user
     ? "Send a message to start chatting. No sign-in needed."
     : deliveryError ||
@@ -1018,7 +1033,13 @@ async function refreshCloud() {
 }
 async function setSession(session) {
   const next = session?.user || null;
-  if (next?.id === user?.id) return;
+  if (next?.id === user?.id) {
+    const upgraded=user?.is_anonymous&&!next?.is_anonymous;
+    user=next;connectionText();
+    if(upgraded){$("#sign-in-dialog").close();announce('Email confirmed. Your workspace is saved to your account.');}
+    if(openEmailOnLoad){openEmailOnLoad=false;if(!user||user.is_anonymous)openEmailDialog('signin');}
+    return;
+  }
   sessionLoading = true;
   $("#prompt-form").inert = true;
   $("#connection-note").textContent = "Loading your workspace…";
@@ -1080,6 +1101,7 @@ async function setSession(session) {
   }
   entryConversationId = null;
   connectionText();
+  if(openEmailOnLoad){openEmailOnLoad=false;if(!user||user.is_anonymous)openEmailDialog('signin');}
   if (user) {
     void flushOutbox();
     void wake();
@@ -1087,6 +1109,12 @@ async function setSession(session) {
 }
 supabase.auth.onAuthStateChange((_event, session) => {
   setTimeout(() => void setSession(session), 0);
+});
+supabase.auth.initialize?.().then(({error})=>{
+  if(!error)return;
+  openEmailDialog('signin');
+  $("#sign-in-feedback").className='field-error';
+  $("#sign-in-feedback").textContent='This sign-in link could not be opened. Request a fresh link here and open it in this browser.';
 });
 connectionText();
 window.addEventListener("online", () => void flushOutbox());

@@ -1918,6 +1918,15 @@ dialog > .text-button {
   gap: 4px;
   flex-shrink: 0;
 }
+.brand[href] { color: inherit; text-decoration: none; }
+.account-row:has(#sign-in:not([hidden])) { flex-wrap: wrap; }
+#sign-in { margin-inline-start: auto; font-size: .75rem; }
+#sign-in-dialog { padding: 28px; inline-size: min(460px,calc(100% - 24px)); }
+#sign-in-dialog h2 { font-size: 1.5rem; margin-block: 0 16px; }
+#sign-in-description { margin-block-end: 20px; font-size: .875rem; line-height: 1.7; color: var(--muted); }
+#sign-in-feedback { font-size: .8125rem; line-height: 1.7; margin-block: 14px 8px; color: var(--accent); }
+#sign-in-feedback.field-error { color: var(--error); }
+#email-mode { font-size: .8125rem; text-align: start; }
 #rename-dialog {
   padding: 28px;
   inline-size: min(440px, calc(100% - 24px));

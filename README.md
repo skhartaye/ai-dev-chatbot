@@ -283,3 +283,9 @@ Apply migration `202611250008_regenerate.sql` and deploy the updated worker befo
 ### Editing sent prompts
 
 Apply `202611250009_edit_prompts.sql` and deploy the updated worker before releasing the frontend. `revise_prompt` atomically saves the revised question and queues its answer with ownership, size, replay and queue-limit validation. `prompts.revision_of` references the original question; its files and context boundary are reused without copying attachment records or storage objects.
+
+## Landing page and email access
+
+Netlify rewrites `/` to `welcome.html` and `/chat` to `index.html`. Old `/?conversation=…` bookmarks and pre-landing email callbacks are forwarded to `/chat` with their query/hash intact. The local preview server mirrors these routes.
+
+Supabase Site URL and the exact allowed callback are `https://kahuron.netlify.app/chat`. Manual identity linking is enabled with owner approval, and Confirm email remains enabled. Guest email upgrades use `updateUser({email})` to retain ownership; ordinary email access uses `signInWithOtp`. Both return to `/chat`. Open PKCE links in the requesting browser. Existing-account sign-in does not merge guest conversations.

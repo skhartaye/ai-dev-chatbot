@@ -202,3 +202,9 @@ Each completed cloud answer offers Regenerate beside Copy and Save .txt. It queu
 ## Editing sent prompts
 
 Show Edit on saved sent prompts. Open a labelled native dialog with the full existing question. Cancel leaves both the sent prompt and unsent composer draft alone. Save & Send appends an edited question and a separate queued answer; it never mutates old questions or answers. Keep the same files by reference, preserve the context boundary of the original question, and label edited questions. Revisions use the existing durable outbox, so reloads and interrupted deliveries do not duplicate or lose edits.
+
+## Landing and email entry
+
+The home route `/` serves `welcome.html`; `/chat` serves the existing workspace. Keep old root conversation bookmarks and email callbacks working through the landing router. Landing content uses the existing Manrope face, green semantic tokens, paper surfaces and restrained shadows; examples are explicitly fictional and do not call AI. Keep Start chatting primary, with email sign-in optional. Use native links, pressed-state sample buttons, and reduced-motion-aware entrance animation.
+
+The header shows Files without a Cloud workspace badge. Guests can Save with email, using the existing user identity rather than creating a separate workspace. Existing-account sign-in warns guest users that chats are not automatically merged. Same-ID auth updates refresh the account controls without resetting the outbox or conversation. Sign-out waits for pending delivery.

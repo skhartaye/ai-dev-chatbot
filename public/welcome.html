@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f4f6f0" />
+  <meta name="description" content="Ask, attach, and keep going. Kahuron is an AI workspace for your questions, documents, and ideas, with a queue that keeps your next thought in line." />
+  <title>Kahuron · Keep your thoughts moving</title>
+  <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/welcome.css" />
+  <script src="/welcome.js" type="module"></script>
+</head>
+<body class="landing">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header wrap">
+    <a class="brand" translate="no" href="/" aria-label="Kahuron home">kahuron<span class="brand-period">.</span></a>
+    <nav aria-label="Main navigation"><a href="#files">Work with files</a><a href="#queue">How it flows</a><a class="sign-link" href="/chat?signin=1">Sign in <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="intro-label"><span aria-hidden="true"></span> A little room for your next idea</p>
+        <h1 id="hero-title">Keep your<br />thoughts <span>moving.</span></h1>
+        <p class="hero-description">Ask a question. Bring a file. Send your next thought while the answer takes shape.</p>
+        <a class="start-link" href="/chat">Start chatting <span aria-hidden="true">↗</span></a>
+        <p class="cta-note">Free to start. No sign-in needed.</p>
+      </div>
+      <div class="conversation-scene" aria-label="Example conversation showing file questions and queued messages">
+        <div class="scene-bar"><span translate="no">kahuron.</span><span class="sample-label">Example workspace</span></div>
+        <div class="scene-thread">
+          <div class="scene-message"><span class="sample-file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5"/></svg> Project notes.pdf <small>PDF</small></span><p>What should we focus on first?</p></div>
+          <div class="scene-answer"><div class="answer-mark" aria-hidden="true">✳</div><div><strong>Start with the next useful step.</strong><p>Bring the scattered notes together, choose one priority, and make a small plan you can act on.</p><div class="sample-actions"><span>Copy</span><span>Regenerate</span></div></div></div>
+          <div class="scene-queue"><div class="queue-line"><span class="queue-dot" aria-hidden="true"></span><strong>Next in line</strong><span>2 questions</span></div><p>Turn that into a checklist.</p><p>Now draft a short update for the team.</p></div>
+        </div>
+        <div class="scene-composer">One more thought… <span aria-hidden="true">↑</span></div>
+      </div>
+    </section>
+    <div class="format-strip wrap" aria-label="Supported files"><span>A conversation with more context.</span><span>PDF</span><span>Word</span><span>Excel</span><span>Images</span></div>
+    <section id="files" class="files-section wrap" aria-labelledby="files-title">
+      <div class="file-demo">
+        <div class="demo-tabs" role="group" aria-label="File examples"><button type="button" data-file-demo="pdf" aria-pressed="true">PDF</button><button type="button" data-file-demo="word" aria-pressed="false">Word</button><button type="button" data-file-demo="excel" aria-pressed="false">Excel</button><button type="button" data-file-demo="image" aria-pressed="false">Image</button></div>
+        <div class="demo-paper"><span class="paper-topline">EXAMPLE FILE</span><strong id="demo-filename">Project brief.pdf</strong><div id="demo-preview"><span>Launch plan</span><p>Gather feedback from the pilot group.</p><p>Refine the onboarding flow.</p><p>Prepare a focused first release.</p></div><div class="paper-lines" aria-hidden="true"><i></i><i></i><i></i></div></div>
+        <div class="demo-question" id="demo-question" role="status" aria-live="polite">“Pull out the key decisions and next steps.”</div>
+      </div>
+      <div class="section-copy"><p class="section-kicker">Your files, in conversation</p><h2 id="files-title">Attach it.<br />Ask what matters.</h2><p>Get help with a document, a spreadsheet, a scanned page, or an image. Keep asking questions without reattaching the same file.</p><p class="supporting-feature"><strong>Make changes with a second look.</strong> Review proposed file edits, then download a separate edited copy.</p><a class="inline-link" href="/chat">Bring your first file <span aria-hidden="true">↗</span></a></div>
+    </section>
+    <section id="queue" class="flow-section wrap" aria-labelledby="flow-title">
+      <div class="flow-heading"><p class="section-kicker">A conversation that keeps up</p><h2 id="flow-title">Don’t lose<br />the next thought.</h2><p>Each message gets its own place in line. Keep typing while AI works; your saved questions run in order when capacity is available.</p></div>
+      <div class="flow-details"><article><span aria-hidden="true">↳</span><div><h3>Send the follow-up now</h3><p>No waiting for one answer before you can queue another question.</p></div></article><article><span aria-hidden="true">↻</span><div><h3>Give a thought another go</h3><p>Edit a sent question or regenerate an answer. Your originals stay saved.</p></div></article><article><span aria-hidden="true">↗</span><div><h3>Take something useful away</h3><p>Copy answers and code, save a response, or download a reviewed file edit.</p></div></article></div>
+    </section>
+    <section class="closing wrap" aria-labelledby="closing-title"><p class="section-kicker">From “what if” to “what’s next”</p><h2 id="closing-title">What’s on your mind?</h2><a class="start-link" href="/chat">Start chatting <span aria-hidden="true">↗</span></a><p>Start as a guest. Add your email when you want to keep your workspace across devices.</p></section>
+  </main>
+  <footer class="site-footer wrap"><a class="brand" translate="no" href="/">kahuron<span class="brand-period">.</span></a><p>AI can make mistakes. Review important answers and file changes.</p><span>Free tier · Provider limits apply</span></footer>
+</body>
+</html>
