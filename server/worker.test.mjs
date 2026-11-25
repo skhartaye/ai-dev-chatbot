@@ -11,7 +11,8 @@ for(const regenerate of [false,true]) test(`edited request ${regenerate?'regener
       then(resolve){resolve({data:table==="prompts"?[{content:"Revised question",revision_of:"source-prompt"}]:[]})}
     };return chain}
   };
-  const worker=createWorker(db,{generate:async input=>{
+  const worker=createWorker(db,{loadInstructions:async(_db,id)=>{assert.equal(id,'chat');return 'Reply in Filipino.';},generate:async (input,options)=>{
+    assert.equal(options.instructions,'Reply in Filipino.');
     assert.deepEqual(input,["CURRENT USER MESSAGE:\nRevised question"]);return {text:"Revised answer",model:"test"};
   }});
   await worker.tick();worker.stop();
@@ -30,7 +31,7 @@ test("regeneration reuses original prompts, context boundary and attachment scop
       then(resolve){resolve({data:table==="prompts"?[{content:"Original question"}]:table==="compilations"?[{id:"prior",answer:"Earlier context"}]:[]})}
     };return chain}
   };
-  const worker=createWorker(db,{generate:async input=>{
+  const worker=createWorker(db,{loadInstructions:async()=>'',generate:async input=>{
     assert.deepEqual(input,["Previous completed answers for context (new prompts below take priority):\nEarlier context","CURRENT USER MESSAGE:\nOriginal question"]);
     return {text:"New version",model:"test"};
   }});
@@ -128,6 +129,7 @@ test("worker accepts one lease, preserves ordered prompts, and stores a complete
     },
   };
   const worker = createWorker(db, {
+    loadInstructions: async () => '',
     generate: async (input) => {
       assert.deepEqual(input, ["CURRENT USER MESSAGE:\nfirst", "CURRENT USER MESSAGE:\nsecond"]);
       await gate;
@@ -190,6 +192,7 @@ test("a quota failure reschedules the leased job instead of losing it", async ()
       },
     },
     {
+      loadInstructions: async () => '',
       generate: async () => {
         const error = new Error("quota");
         error.status = 429;

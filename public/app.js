@@ -1,4 +1,4 @@
-import { initSettings } from "./settings.js";
+import { initSettings, initAccountSettings } from "./settings.js";
 import {appendAnswerActions} from "./answer-actions.js";
 import {requestEmailLink,verifyEmailCode,verifyEmailReturn,emailError} from "./email-auth.js";
 import {summarizeUsage} from "./usage.js";
@@ -49,6 +49,7 @@ let cloudGeneration = 0;
 let deliveryError = "";
 let staleTab = false;
 let sessionLoading = false;
+let accountSettings;
 let startingGuest = false;
 let emailMode='signin',emailBusy=false,emailSentAt=0;
 let emailChallenge=null;
@@ -938,6 +939,7 @@ function regenerateAnswer(c,source) {
   render();announce("Regeneration queued. Your original answer is kept.");void flushOutbox();
 }
 function connectionText() {
+  accountSettings?.sync();
   $("#workspace-name").textContent = user?.is_anonymous ? "Guest workspace" : user?.email||"Your workspace";
   $("#workspace-status").textContent = user && !user.is_anonymous ? "Signed in · Saved across devices" : "Saved in this browser";
   $(".account-row .avatar").textContent=user?.email&&!user.is_anonymous?user.email[0].toUpperCase():'G';
@@ -954,6 +956,31 @@ function connectionText() {
         : "Prompts saved online. Keep adding context while AI works.");
 }
 initSettings(document);
+accountSettings = initAccountSettings(document, {
+  getUser: () => user,
+  isReady: () => !sessionLoading && !staleTab,
+  saveInstructions: async value => {
+    const owner = user?.id;
+    const { data, error } = await supabase.auth.updateUser({ data: { kahuron_instructions: value } });
+    if (error || !data?.user || data.user.id !== owner) throw new Error('Could not save instructions.');
+    if (user?.id === owner) { user = data.user; connectionText(); }
+  },
+  exportAccount: async (signal, onProgress) => {
+    const owner = user?.id, generation = cloudGeneration;
+    const account = structuredClone(user);
+    if (!persist()) throw new Error('Could not preserve drafts. Free browser storage and try again.');
+    const local = structuredClone({ drafts, pendingDelivery: outbox });
+    // No auth storage is read or serialized. Appearance is a separate browser preference.
+    try { local.appearance = JSON.parse(localStorage.getItem('kahuron:appearance') || '{}'); } catch { local.appearance = {}; }
+    const { buildAccountExport, downloadAccountExport } = await import('./account-export.js');
+    const isCurrent = () => user?.id === owner && cloudGeneration === generation && !staleTab;
+    const result = await buildAccountExport({ db: supabase, user: account, local, isCurrent, getLocalFile: getFile, signal, onProgress });
+    signal.throwIfAborted();
+    if (!isCurrent()) throw new Error('Account changed. Export again from Settings.');
+    downloadAccountExport(document, result.blob);
+    return result;
+  },
+});
 $("#open-settings").addEventListener('click',()=>{$("#nav-dialog").close();connectionText();$("#settings-dialog").showModal();void refreshUsage();});
 $("#refresh-usage").addEventListener('click',()=>void refreshUsage());
 async function refreshUsage() {

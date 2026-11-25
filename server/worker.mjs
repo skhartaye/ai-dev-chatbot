@@ -1,5 +1,6 @@
 import { generateAvailableAnswer } from "./gemini.mjs";
 import { loadAttachments } from "./attachments.mjs";
+import { loadAccountInstructions } from './ai-instructions.mjs';
 
 export function retryPlan(
   error,
@@ -35,7 +36,7 @@ export function retryPlan(
   return { code, delay: Math.ceil(delay), retryable: Boolean(retryable) };
 }
 
-export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
+export function createWorker(db, { generate = generateAvailableAnswer, loadInstructions = loadAccountInstructions } = {}) {
   let running = false;
   let stopped = false;
   async function rpc(name, args) {
@@ -102,7 +103,8 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
           error.code = "context_limit";
           throw error;
         }
-        const answer = await generate(input,{attachments});
+        const instructions = await loadInstructions(db, job.conversation_id);
+        const answer = await generate(input,{attachments,instructions});
         await rpc("finish_compilation", {
           p_id: job.id,
           p_lease: job.lease_token,

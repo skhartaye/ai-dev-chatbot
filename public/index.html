@@ -585,7 +585,9 @@
       <div class="settings-tabs" role="tablist" aria-label="Settings sections">
         <button type="button" role="tab" id="settings-account-tab" aria-selected="true" tabindex="0" data-settings-tab="account">Account</button>
         <button type="button" role="tab" id="settings-general-tab" aria-selected="false" tabindex="-1" data-settings-tab="general">General</button>
+        <button type="button" role="tab" id="settings-instructions-tab" aria-selected="false" tabindex="-1" data-settings-tab="instructions">Instructions</button>
         <button type="button" role="tab" id="settings-usage-tab" aria-selected="false" tabindex="-1" data-settings-tab="usage">Usage</button>
+        <button type="button" role="tab" id="settings-data-tab" aria-selected="false" tabindex="-1" data-settings-tab="data">Data</button>
       </div>
       <section role="tabpanel" aria-labelledby="settings-account-tab" data-settings-panel="account">
         <h2>Account</h2><strong id="settings-email">Guest workspace</strong><p id="settings-account-status">Guest</p><button id="sign-in" class="text-button" type="button">Sign in</button>
@@ -602,6 +604,23 @@
         <div class="quota-status"><span>Provider quota</span><strong>Not available</strong></div>
         <p id="usage-feedback" role="status" aria-atomic="true"></p><div id="usage-summary" hidden></div>
         <details class="settings-details"><summary>Usage details</summary><p>Token counts come from saved provider reports. Failed attempts may be missing. Gemini limits are shared across the project; a verified quota percentage is unavailable.</p></details>
+      </section>
+      <section role="tabpanel" aria-labelledby="settings-instructions-tab" data-settings-panel="instructions" hidden>
+        <form id="instructions-form" aria-labelledby="instructions-label">
+          <label id="instructions-label" for="ai-instructions">AI instructions</label>
+          <p id="instructions-scope">Saved to your account. Applies when an AI request starts.</p>
+          <textarea id="ai-instructions" name="instructions" rows="6" maxlength="4000" autocomplete="off" aria-describedby="instructions-scope instructions-limit" aria-invalid="false" placeholder="Reply in Filipino. Keep explanations concise. Use TypeScript for code examples."></textarea>
+          <div class="instructions-footer"><span id="instructions-limit">0 / 4,000</span><button type="submit" id="save-instructions" class="primary-button">Save instructions</button></div>
+          <p id="instructions-feedback" role="status" aria-atomic="true"></p>
+        </form>
+      </section>
+      <section role="tabpanel" aria-labelledby="settings-data-tab" data-settings-panel="data" hidden>
+        <h2>Account export</h2>
+        <p>All saved chats, AI instructions, files, and this browser’s drafts in one ZIP.</p>
+        <button type="button" class="primary-button" id="export-account">Export account</button>
+        <button type="button" class="text-button" id="cancel-account-export" hidden>Cancel export</button>
+        <p id="account-export-feedback" role="status" aria-atomic="true"></p>
+        <details class="settings-details"><summary>What’s included</summary><p>Includes saved answers, usage reports and queue history. Word/Excel originals are included when available on this browser; otherwise their saved extracted text is included. The archive lists unavailable originals. Files you downloaded after editing aren’t stored in the account.</p></details>
       </section>
     </dialog>
 
