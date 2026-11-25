@@ -17,8 +17,8 @@ test('Gemini receives actual PDF/image bytes and converted Office text alongside
 });
 test('attachment retrieval restricts conversation and completed/current batches, validates payloads',async()=>{
   const calls=[];
-  const db={from(table){assert.equal(table,'attachments');return {select(){return this},eq(...args){calls.push(args);return this},in(...args){calls.push(args);return this},order(){return Promise.resolve({data:[{name:'scan.pdf',mime_type:'application/pdf',size:5,storage_path:'owner/prompt/file',prompts:{compilation_id:'completed'}}]})}}},storage:{from(bucket){assert.equal(bucket,'chat-attachments');return {download:async path=>{assert.equal(path,'owner/prompt/file');return {data:new Blob(['%PDF-'])}}}}}};
-  assert.deepEqual(await loadAttachments(db,'chat',['current','completed']),[{name:'scan.pdf',mimeType:'application/pdf',data:'JVBERi0=',scope:'history'}]);
+  const db={from(table){assert.equal(table,'attachments');return {select(){return this},eq(...args){calls.push(args);return this},in(...args){calls.push(args);return this},order(){return Promise.resolve({data:[{id:'file-id',name:'scan.pdf',mime_type:'application/pdf',size:5,storage_path:'owner/prompt/file',prompts:{compilation_id:'completed'}}]})}}},storage:{from(bucket){assert.equal(bucket,'chat-attachments');return {download:async path=>{assert.equal(path,'owner/prompt/file');return {data:new Blob(['%PDF-'])}}}}}};
+  assert.deepEqual(await loadAttachments(db,'chat',['current','completed']),[{id:'file-id',name:'scan.pdf',mimeType:'application/pdf',data:'JVBERi0=',scope:'history'}]);
   assert.deepEqual(calls,[['prompts.conversation_id','chat'],['prompts.compilation_id',['current','completed']]]);
   db.storage.from=()=>({download:async()=>({error:{message:'offline'}})});
   await assert.rejects(loadAttachments(db,'chat',['current']),error=>error.retryable===true);

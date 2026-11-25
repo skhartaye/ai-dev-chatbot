@@ -16,13 +16,16 @@
     "@xmldom/xmldom": "^0.8.15",
     "dompurify": "^3.5.0",
     "fflate": "^0.8.3",
+    "image-size": "^2.1.0",
     "lucide": "^1.79.0",
     "mammoth": "^1.13.0",
     "marked": "^18.3.0",
+    "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.5.438",
     "read-excel-file": "^9.3.20"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.2.0",
     "esbuild": "^0.28.2",
     "fake-indexeddb": "^6.2.8",
     "jsdom": "^29.1.1"

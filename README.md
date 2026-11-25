@@ -193,5 +193,35 @@ New Excel attachments include a cell/formula map in their AI text payload. For o
 attachments, re-upload to supply coordinates before requesting formula edits. The
 original-file chooser still accepts older extracted-text payloads. Structural edits,
 protected/signed files, active embedded content and Word fields/tracked changes
-remain unsupported. PDF/image editing remains unavailable. AI output is validated
+remain unsupported. PDF/image editing is described below. AI output is validated
 data, never JavaScript. ZIP expansion limits apply before decompression.
+
+
+## Reviewing PDF and image edits
+
+PDF and still-image attachments use the same structured edit response, original
+file IDs, and Review edits/download workflow as Office documents. Original bytes
+come from the existing IndexedDB buffer or owner-only private Storage; no duplicate
+original or new upload is needed. The original is immutable. Review displays real
+original/edited images or independently navigable PDF pages. Download stays hidden
+until both previews load. Closing/switching chats cancels work and releases previews.
+
+PDF: add Latin text annotations/watermarks and translucent highlights, rotate
+pages, or keep/reorder a selected list of original page numbers. Supports scanned
+PDFs too. No rewriting existing text or secure redaction. Forms, signed/encrypted
+or active PDFs are rejected; annotations require an upright original page. At most
+50 pages and 20 operations. Page selection/annotations are not secure removal of
+sensitive source data. All PDF operations preserve original content unless pages
+are explicitly excluded from the output page tree.
+
+Images: crop, resize, rotate, flip, brightness/contrast/saturation/grayscale, text,
+rectangles and ellipses. Edits are applied sequentially to pixels and exported as
+PNG, preserving transparency but discarding original photo metadata. No generative
+editing, inpainting, object/background removal or selective recoloring. Animated
+images are rejected. Limits: 16 megapixels, 8192 pixels per side, 20 operations.
+
+Both input/output remain limited to 10 MB. Heavy edits run in a cancellable worker
+with a 30-second deadline. Browsers without worker canvas APIs use the same canvas
+renderer on the main thread. Assets/libraries are self-hosted and editing adds no
+paid provider. Core tests inspect actual image pixels, PDF text and page structure;
+the review integration test verifies preview gating and cleanup.

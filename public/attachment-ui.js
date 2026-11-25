@@ -177,7 +177,7 @@ async function openPreview(file) {
   const generation=++previewGeneration;
   $("#preview-title").textContent=file.name;
   $("#preview-kind").textContent=filePresentation(file).label;
-  requestEdits.hidden=!/\.(docx|xlsx)$/i.test(file.name);
+  requestEdits.hidden=!/\.(docx|xlsx|pdf|png|jpe?g|webp)$/i.test(file.name);
   $("#preview-status").textContent="Opening private preview…";
   for(const id of ["preview-image","preview-text","preview-pdf","pdf-controls","preview-download"])$("#"+id).hidden=true;
   $("#preview-retry").hidden=true;

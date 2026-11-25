@@ -6,6 +6,8 @@ public/extract-office.worker.js*
 !public/extract-office.worker.source.js
 public/calculate.worker.js*
 !public/calculate.worker.source.js
+public/media-edit.worker.js*
+!public/media-edit.worker.source.js
 .env
 .env.*
 !.env.example

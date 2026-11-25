@@ -1,6 +1,7 @@
 import { getFile, putFile } from "./attachment-store.js";
 import { downloadAttachment } from "./cloud.js";
-import { editOffice, validateEditPlan } from "./edit-office.js";
+import { editFile, validateFileEdit } from "./edit-file.js";
+import { isVisualFile } from "./media-edit-plan.js";
 import { extractFile, validateFile } from "./extract-file.js";
 
 const el = (tag, text, className) => {
@@ -13,8 +14,11 @@ let dialog,
   url,
   generation = 0;
 let editController;
+let destroyVisual;
 export function closeEditReview() {
   editController?.abort();
+  destroyVisual?.();
+  destroyVisual = null;
   generation++;
   if (dialog?.open) dialog.close();
   if (url) URL.revokeObjectURL(url);
@@ -27,7 +31,7 @@ export function appendEditReviews(node, plans, files) {
   for (const plan of plans.slice(0, 3)) {
     const card = el("section", null, "edit-proposal");
     try {
-      const file = validateEditPlan(plan, files);
+      const file = validateFileEdit(plan, files);
       card.append(
         el("strong", file.name),
         el(
@@ -72,7 +76,9 @@ async function openReview(plan, file) {
   const choose = el("button", "Choose original file", "primary-button");
   choose.type = "button";
   choose.hidden = true;
-  choose.addEventListener("click", () => input.click());
+  choose.addEventListener("click", () =>
+    isVisualFile(file.name) ? void loadVisualOriginal() : input.click(),
+  );
   const download = el("a", "Download edited copy", "file-download");
   download.hidden = true;
   footer.append(choose, download);
@@ -83,6 +89,9 @@ async function openReview(plan, file) {
   activeDialog.addEventListener("close", () => {
     if (activeDialog !== dialog || activeDialog.open) return;
     generation++;
+    editController?.abort();
+    destroyVisual?.();
+    destroyVisual = null;
     if (url) URL.revokeObjectURL(url);
     url = null;
   });
@@ -94,20 +103,34 @@ async function openReview(plan, file) {
     try {
       editController?.abort();
       editController = new AbortController();
-      const result = await editOffice(original, plan, {
+      const result = await editFile(original, plan, {
         signal: editController.signal,
       });
       if (own !== generation || !activeDialog.open) return;
       body.replaceChildren();
+      if (result.kind) {
+        status.textContent = "Rendering the original and edited copy…";
+        const { mountVisualReview } = await import("./visual-edit-review.js");
+        destroyVisual = await mountVisualReview(body, original, result, {
+          signal: editController.signal,
+        });
+        if (own !== generation || !activeDialog.open) {
+          destroyVisual();
+          return;
+        }
+      }
       for (const change of result.log) {
         const row = el("section", null, "edit-change");
-        row.append(
-          el("h2", change.location),
-          el("span", "Before", "edit-label"),
-          el("del", change.find),
-          el("span", "After", "edit-label"),
-          el("ins", String(change.replace ?? "(empty)")),
-        );
+        if (change.description)
+          row.append(el("h2", change.location), el("p", change.description));
+        else
+          row.append(
+            el("h2", change.location),
+            el("span", "Before", "edit-label"),
+            el("del", change.find),
+            el("span", "After", "edit-label"),
+            el("ins", String(change.replace ?? "(empty)")),
+          );
         if (change.formatLabel)
           row.append(
             el("p", `Formatting · ${change.formatLabel}`, "edit-format-label"),
@@ -118,6 +141,8 @@ async function openReview(plan, file) {
           );
         body.append(row);
       }
+      for (const note of result.notes || [])
+        body.append(el("p", note, "edit-format-label"));
       if (result.calculations?.length) {
         const details = el("details", null, "formula-results");
         details.append(
@@ -156,9 +181,27 @@ async function openReview(plan, file) {
       if (own !== generation) return;
       status.textContent = error.message;
       choose.hidden = false;
-      choose.textContent = "Choose original again";
+      choose.textContent = isVisualFile(file.name)
+        ? "Try again"
+        : "Choose original again";
     } finally {
       choose.disabled = false;
+    }
+  };
+  const loadVisualOriginal = async () => {
+    choose.hidden = true;
+    status.textContent = "Loading the original attachment…";
+    try {
+      const original =
+        (await getFile(file.id).catch(() => null)) ||
+        (await downloadAttachment(file.id));
+      if (own === generation) await build(original);
+    } catch (error) {
+      if (own === generation) {
+        status.textContent = error.message;
+        choose.textContent = "Try again";
+        choose.hidden = false;
+      }
     }
   };
   input.addEventListener("change", async () => {
@@ -192,6 +235,10 @@ async function openReview(plan, file) {
     }
   });
   try {
+    if (isVisualFile(file.name)) {
+      await loadVisualOriginal();
+      return;
+    }
     const original = await getFile(`${file.id}:original`);
     if (own !== generation) return;
     if (original) await build(original);

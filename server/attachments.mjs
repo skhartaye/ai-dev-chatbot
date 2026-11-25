@@ -20,7 +20,7 @@ export async function loadAttachments(db,conversationId,compilationIds) {
     } else {
       const valid=file.mime_type==="application/pdf"?bytes.subarray(0,5).toString()==="%PDF-":file.mime_type==="image/png"?bytes[0]===137&&bytes.subarray(1,4).toString()==="PNG":file.mime_type==="image/jpeg"?bytes[0]===255&&bytes[1]===216:file.mime_type==="image/webp"?bytes.subarray(0,4).toString()==="RIFF"&&bytes.subarray(8,12).toString()==="WEBP":false;
       if(!valid) throw new Error("Invalid attachment format.");
-      result.push({name:file.name,mimeType:file.mime_type,data:bytes.toString("base64"),scope});
+      result.push({id:file.id,name:file.name,mimeType:file.mime_type,data:bytes.toString("base64"),scope});
     }
   }
   return result;
