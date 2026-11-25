@@ -41,13 +41,21 @@ export function validateVisualPlan(plan, files) {
     throw new Error("Request between 1 and 20 visual edits per file.");
   const pdf = mediaKind(file.name) === "pdf";
   let pageSelection = false;
+  const filledFields = new Set();
   for (const c of plan.changes) {
     if (!c || typeof c !== "object" || Array.isArray(c))
       throw new Error("The AI returned an invalid visual edit.");
     if (
       !(
         pdf
-          ? ["rotate", "selectPages", "addText", "highlight"]
+          ? [
+              "rotate",
+              "selectPages",
+              "addText",
+              "highlight",
+              "replaceText",
+              "fillField",
+            ]
           : [
               "rotate",
               "crop",
@@ -65,10 +73,59 @@ export function validateVisualPlan(plan, files) {
       );
     if (
       pdf &&
-      c.op !== "selectPages" &&
+      !["selectPages", "fillField"].includes(c.op) &&
       (!Number.isInteger(c.page) || c.page < 1 || c.page > 50)
     )
       throw new Error("Specify an original PDF page number from 1 to 50.");
+    if (c.op === "replaceText") {
+      if (
+        typeof c.find !== "string" ||
+        !c.find.length ||
+        c.find.length > 500 ||
+        typeof c.replace !== "string" ||
+        !c.replace.length ||
+        c.replace.length > 1000 ||
+        /[\p{Cc}]/u.test(c.find + c.replace) ||
+        !Number.isInteger(c.count) ||
+        c.count < 1 ||
+        c.count > 100
+      )
+        throw new Error(
+          "Use exact single-line PDF text, a non-empty replacement and an expected match count (1–100).",
+        );
+    }
+    if (c.op === "fillField") {
+      const validValue = (v) =>
+        v === null ||
+        typeof v === "boolean" ||
+        (typeof v === "string" && v.length <= 10000) ||
+        (Array.isArray(v) &&
+          v.length <= 50 &&
+          v.every((i) => typeof i === "string" && i.length <= 500));
+      if (!validValue(c.expected) || filledFields.has(c.field))
+        throw new Error(
+          "Use a valid expected value and edit each form field only once.",
+        );
+      filledFields.add(c.field);
+      if (
+        typeof c.field !== "string" ||
+        !c.field.length ||
+        c.field.length > 255 ||
+        !("expected" in c) ||
+        !("value" in c) ||
+        (!["string", "boolean"].includes(typeof c.value) &&
+          !Array.isArray(c.value)) ||
+        (typeof c.value === "string" &&
+          (c.value.length > 10000 ||
+            /[\p{Cc}]/u.test(c.value.replace(/[\r\n]/g, "")))) ||
+        (Array.isArray(c.value) &&
+          (c.value.length > 50 ||
+            c.value.some((v) => typeof v !== "string" || v.length > 500)))
+      )
+        throw new Error(
+          "Form edits need an exact field name, expected original value and a valid text, checkbox or choice value.",
+        );
+    }
     if (c.op === "rotate") {
       if (![-270, -180, -90, 90, 180, 270].includes(c.degrees))
         throw new Error("Rotate by 90, 180 or 270 degrees.");

@@ -200,7 +200,7 @@ test("PDF edits add readable Unicode annotations, retain source text, reorder an
     await loading.destroy();
   }
 });
-test("PDF page removal works while forms, impossible pages and removed-page edits fail safely", async () => {
+test("PDF page removal works while impossible pages and removed-page edits fail safely", async () => {
   const original = await pdfFixture();
   const removed = await editPdf(
     original,
@@ -223,15 +223,5 @@ test("PDF page removal works while forms, impossible pages and removed-page edit
       ]),
     ),
     /also removes/,
-  );
-  const form = await PDFDocument.create();
-  form.addPage();
-  form.getForm().createTextField("name");
-  await assert.rejects(
-    editPdf(
-      new Blob([await form.save()]),
-      plan("a.pdf", [{ op: "rotate", page: 1, degrees: 90 }]),
-    ),
-    /forms and signed/,
   );
 });

@@ -208,10 +208,14 @@ until both previews load. Closing/switching chats cancels work and releases prev
 
 PDF: add Latin text annotations/watermarks and translucent highlights, rotate
 pages, or keep/reorder a selected list of original page numbers. Supports scanned
-PDFs too. No rewriting existing text or secure redaction. Forms, signed/encrypted
-or active PDFs are rejected; annotations require an upright original page. At most
+PDFs too. Exact text rewriting changes searchable text objects within their original bounds
+using the original font (no paragraph reflow or OCR rewriting). Standard AcroForm
+text, checkbox, dropdown, list and radio fields can be filled using real field
+names, existing values and allowed options derived from the uploaded PDF. Fields
+remain editable. Read-only/password fields and XFA, signed/encrypted or active
+PDFs are rejected; annotations require an upright original page. At most
 50 pages and 20 operations. Page selection/annotations are not secure removal of
-sensitive source data. All PDF operations preserve original content unless pages
+sensitive source data. Rewriting is not secure redaction. Other PDF operations preserve original content unless pages
 are explicitly excluded from the output page tree.
 
 Images: crop, resize, rotate, flip, brightness/contrast/saturation/grayscale, text,

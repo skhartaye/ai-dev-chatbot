@@ -8,6 +8,7 @@ import {
 } from "pdf-lib";
 import { validateVisualPlan } from "./media-edit-plan.js";
 import { MAX_FILE_BYTES } from "./extract-file.js";
+import { pdfFormFields, fillPdfFields } from "./pdf-form-fields.js";
 const color = (value) => {
   const hex = value.slice(1);
   return rgb(
@@ -16,7 +17,7 @@ const color = (value) => {
     parseInt(hex.slice(4, 6), 16) / 255,
   );
 };
-export async function editPdf(blob, plan, { signal } = {}) {
+export async function editPdf(blob, plan, { signal, wasmBinary } = {}) {
   validateVisualPlan(plan, [{ id: plan.fileId, name: plan.name }]);
   signal?.throwIfAborted();
   if (blob.size > MAX_FILE_BYTES)
@@ -31,10 +32,12 @@ export async function editPdf(blob, plan, { signal } = {}) {
       "This PDF is damaged or password protected. Export an unlocked copy first.",
     );
   }
-  if (doc.catalog.has(PDFName.of("AcroForm")))
-    throw new Error(
-      "PDF forms and signed documents are not supported for editing yet.",
-    );
+  const fields = pdfFormFields(doc);
+  if (
+    fields.some((f) => f.type === "signature") ||
+    doc.catalog.has(PDFName.of("Perms"))
+  )
+    throw new Error("Signed or signature-bearing PDFs cannot be edited.");
   const names = doc.catalog.lookupMaybe(PDFName.of("Names"), PDFDict);
   if (
     doc.catalog.has(PDFName.of("AA")) ||
@@ -59,6 +62,42 @@ export async function editPdf(blob, plan, { signal } = {}) {
     throw new Error(
       "The proposal edits a page it also removes. Ask for a consistent set of changes.",
     );
+  if (fields.length && plan.changes.some((c) => c.op === "selectPages"))
+    throw new Error(
+      "Page selection is unavailable for forms to preserve their field widgets.",
+    );
+  const rewrites = plan.changes.filter((c) => c.op === "replaceText");
+  if (rewrites.length) {
+    const { rewritePdfText } = await import("./rewrite-pdf-text.js");
+    const result = await rewritePdfText(
+      new Uint8Array(await blob.arrayBuffer()),
+      rewrites,
+      { signal, wasmBinary },
+    );
+    const remainder = plan.changes.filter((c) => c.op !== "replaceText");
+    if (remainder.length) {
+      const edited = await editPdf(
+        new Blob([result.bytes], { type: "application/pdf" }),
+        { ...plan, changes: remainder },
+        { signal, wasmBinary },
+      );
+      edited.log.unshift(...result.log);
+      edited.notes.push(
+        "Text objects were rewritten without an overlay. This is not secure redaction.",
+      );
+      return edited;
+    }
+    return {
+      kind: "pdf",
+      blob: new Blob([result.bytes], { type: "application/pdf" }),
+      name: plan.name.replace(/\.pdf$/i, "-edited.pdf"),
+      log: result.log,
+      previewPages: [rewrites[0].page, rewrites[0].page],
+      notes: [
+        "Rewrites editable text objects within their original bounds. Paragraph reflow, scans and secure redaction are not supported.",
+      ],
+    };
+  }
   const fonts = new Map();
   if (plan.changes.some((c) => c.op === "addText")) {
     for (const weight of new Set(
@@ -78,8 +117,18 @@ export async function editPdf(blob, plan, { signal } = {}) {
   }
   const log = [],
     rotations = new Map();
+  const formChanges = plan.changes.filter((c) => c.op === "fillField");
+  if (formChanges.length) {
+    if (plan.changes.some((c) => c.op === "selectPages"))
+      throw new Error(
+        "Fill form fields and change the page order in separate edits to preserve form widgets.",
+      );
+    const formLog = fillPdfFields(doc, formChanges);
+    log.push(...formLog);
+  }
   for (const c of plan.changes) {
     signal?.throwIfAborted();
+    if (c.op === "fillField") continue;
     if (c.op === "selectPages") {
       log.push({
         location: "PDF pages",
@@ -170,7 +219,10 @@ export async function editPdf(blob, plan, { signal } = {}) {
     throw new Error(
       "The edited PDF exceeds 10 MB. Use a smaller source or fewer annotations.",
     );
-  const firstPage = plan.changes.find((c) => c.page)?.page || selected[0];
+  const firstPage =
+    plan.changes.find((c) => c.page)?.page ||
+    log.find((c) => c.page)?.page ||
+    selected[0];
   return {
     kind: "pdf",
     blob: new Blob([bytes], { type: "application/pdf" }),
@@ -178,7 +230,10 @@ export async function editPdf(blob, plan, { signal } = {}) {
     log,
     previewPages: [firstPage, selected.indexOf(firstPage) + 1],
     notes: [
-      "PDF annotations and page selection do not rewrite existing text or provide secure redaction.",
+      ...(formChanges.length
+        ? ["Filled form fields remain editable in the downloaded copy."]
+        : []),
+      "PDF annotations and page selection are not secure redaction.",
     ],
   };
 }
