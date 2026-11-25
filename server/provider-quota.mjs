@@ -88,7 +88,7 @@ export function createQuotaReader({ credentials = () => readFileSync('/etc/secre
     if (!pending) pending = read().catch(error => {
       console.warn('Provider quota read unavailable', { stage: error.stage || 'configuration', httpStatus: error.httpStatus || null, reason: error.reason || (error.code === 'ENOENT' ? 'SECRET_FILE_MISSING' : 'UNAVAILABLE') });
       return { status: 'unavailable', ...(error.reason ? {reason:error.reason} : {}) };
-    }).then(result => { cached = result; cacheUntil = now() + 60000; return result; }).finally(() => { pending = null; });
+    }).then(result => { cached = result; cacheUntil = result.reason === 'BILLING_REQUIRED' ? Infinity : now() + 60000; return result; }).finally(() => { pending = null; });
     return pending;
   };
 }

@@ -10,6 +10,12 @@ export function renderProviderQuota(container, report) {
   const doc = container.ownerDocument;
   container.replaceChildren();
   const add = (tag, text, cls) => { const node = doc.createElement(tag); node.textContent = text; if (cls) node.className = cls; container.append(node); return node; };
+  if (['BILLING_REQUIRED','BILLING_DISABLED'].includes(report.reason)) {
+    add('h3', 'Daily requests remaining');
+    add('strong', 'Unavailable');
+    add('p', 'Google requires billing for quota reporting. Billing remains off.', 'quota-note');
+    return;
+  }
   if (report.status !== 'available' || !Number.isSafeInteger(report.used) || report.used < 0 || !Number.isSafeInteger(report.limit) || report.limit <= 0 || !Number.isFinite(Date.parse(report.asOf)) || !Number.isFinite(Date.parse(report.resetsAt)) || Date.parse(report.resetsAt) <= Date.now()) {
     add('span', 'Provider quota'); add('strong', 'Not available');
     add('p', report.status === 'loading' ? 'Loading provider quota…' : 'Remaining percentage needs a current provider report. Refresh to retry.', 'quota-note');

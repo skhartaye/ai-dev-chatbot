@@ -12,5 +12,9 @@ test('quota meter shows remaining daily capacity and rejects missing or expired 
   for (const data of [{ status: 'unavailable' }, { ...report, limit: 0 }, { ...report, resetsAt: new Date(Date.now() - 1).toISOString() }]) {
     renderProviderQuota(node, data); assert.equal(node.querySelector('meter'), null); assert.doesNotMatch(node.textContent, /% remaining/);
   }
+  renderProviderQuota(node, {status:'unavailable',reason:'BILLING_REQUIRED'});
+  assert.match(node.textContent, /Daily requests remaining/);
+  assert.match(node.textContent, /Billing remains off/);
+  assert.equal(node.querySelector('meter'), null);
   dom.window.close();
 });
