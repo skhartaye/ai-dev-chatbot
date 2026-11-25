@@ -39,7 +39,17 @@ export function createQuotaReader({ credentials = () => readFileSync('/etc/secre
   let token, tokenUntil = 0, cached, cacheUntil = 0, pending;
   const request = async (url, options) => {
     const response = await fetchImpl(url, { ...options, signal: AbortSignal.timeout(15000) });
-    if (!response.ok) throw new Error('Provider quota unavailable.');
+    if (!response.ok) {
+      const error = new Error('Provider quota unavailable.');
+      error.httpStatus = response.status;
+      error.stage = url.includes('oauth2.googleapis.com') ? 'authentication' : 'metrics';
+      try {
+        const details = (await response.json()).error?.details || [];
+        const reason = details.find(d => d['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo')?.reason;
+        if (['BILLING_DISABLED','SERVICE_DISABLED','ACCESS_TOKEN_SCOPE_INSUFFICIENT','IAM_PERMISSION_DENIED'].includes(reason)) error.reason = reason;
+      } catch {}
+      throw error;
+    }
     return response.json();
   };
   async function read() {
@@ -70,7 +80,10 @@ export function createQuotaReader({ credentials = () => readFileSync('/etc/secre
   }
   return async () => {
     if (cached && cacheUntil > now()) return cached;
-    if (!pending) pending = read().catch(() => ({ status: 'unavailable' })).then(result => { cached = result; cacheUntil = now() + 60000; return result; }).finally(() => { pending = null; });
+    if (!pending) pending = read().catch(error => {
+      console.warn('Provider quota read unavailable', { stage: error.stage || 'configuration', httpStatus: error.httpStatus || null, reason: error.reason || (error.code === 'ENOENT' ? 'SECRET_FILE_MISSING' : 'UNAVAILABLE') });
+      return { status: 'unavailable' };
+    }).then(result => { cached = result; cacheUntil = now() + 60000; return result; }).finally(() => { pending = null; });
     return pending;
   };
 }
