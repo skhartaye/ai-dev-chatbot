@@ -44,9 +44,12 @@ export function createQuotaReader({ credentials = () => readFileSync('/etc/secre
       error.httpStatus = response.status;
       error.stage = url.includes('oauth2.googleapis.com') ? 'authentication' : 'metrics';
       try {
-        const details = (await response.json()).error?.details || [];
+        const providerError = (await response.json()).error;
+        const details = providerError?.details || [];
         const reason = details.find(d => d['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo')?.reason;
         if (['BILLING_DISABLED','SERVICE_DISABLED','ACCESS_TOKEN_SCOPE_INSUFFICIENT','IAM_PERMISSION_DENIED'].includes(reason)) error.reason = reason;
+        if (/billing/i.test(providerError?.message || '')) error.reason = 'BILLING_REQUIRED';
+        else if (!error.reason && /permission|denied/i.test(providerError?.message || '')) error.reason = 'PERMISSION_DENIED';
       } catch {}
       throw error;
     }
@@ -84,7 +87,7 @@ export function createQuotaReader({ credentials = () => readFileSync('/etc/secre
     if (cached && cacheUntil > now()) return cached;
     if (!pending) pending = read().catch(error => {
       console.warn('Provider quota read unavailable', { stage: error.stage || 'configuration', httpStatus: error.httpStatus || null, reason: error.reason || (error.code === 'ENOENT' ? 'SECRET_FILE_MISSING' : 'UNAVAILABLE') });
-      return { status: 'unavailable' };
+      return { status: 'unavailable', ...(error.reason ? {reason:error.reason} : {}) };
     }).then(result => { cached = result; cacheUntil = now() + 60000; return result; }).finally(() => { pending = null; });
     return pending;
   };
