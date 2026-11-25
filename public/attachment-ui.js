@@ -136,7 +136,7 @@ export function renderAttachmentUI(c,preparing,onRemove,animate=false) {
   if(conversationId!==c.id){resetAttachmentUI();conversationId=c.id;}
   removeDraft=onRemove;
   const drafts=[...(c.draftAttachments||[]).map(f=>({...f,draft:true})),...preparing.filter(f=>f.conversationId===c.id)];
-  files=c.prompts.flatMap((p,index)=>(p.attachments||[]).map(file=>{
+  files=c.prompts.flatMap((p,index)=>(p.revisionOf?[]:p.attachments||[]).map(file=>{
     const job=c.jobs.find(j=>j.promptIds.includes(p.id));
     const busy=p.syncing||job?.status==="syncing";
     return {...file,status:busy?"uploading":job?.status==="processing"?"reading":"ready",statusLabel:busy?"Uploading…":job?.status==="processing"?"Reading with AI…":`Message ${index+1} · Saved`};

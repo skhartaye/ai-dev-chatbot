@@ -279,3 +279,7 @@ from the normal UI. Legacy unassigned prompts retain a recovery send action.
 ### Regenerate
 
 Apply migration `202611250008_regenerate.sql` and deploy the updated worker before exposing the new frontend. Regenerate retains every answer and references immutable original input via `compilations.regeneration_of`; client writes use the ownership-checked, idempotent `regenerate_answer` RPC.
+
+### Editing sent prompts
+
+Apply `202611250009_edit_prompts.sql` and deploy the updated worker before releasing the frontend. `revise_prompt` atomically saves the revised question and queues its answer with ownership, size, replay and queue-limit validation. `prompts.revision_of` references the original question; its files and context boundary are reused without copying attachment records or storage objects.

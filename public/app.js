@@ -298,6 +298,12 @@ function render() {
       ),
     );
     item.append(top, element("p", "prompt-content", p.content));
+    if(p.revisionOf) item.append(element("span","prompt-tag","Edited question"));
+    if(user&&c.remote&&!p.syncing&&!pendingIds.has(p.id)) {
+      const edit=element("button","answer-action","Edit");edit.type="button";
+      edit.setAttribute("aria-label",`Edit prompt ${index+1}`);edit.setAttribute("aria-haspopup","dialog");
+      edit.addEventListener("click",()=>openPromptEdit(c,p));item.append(edit);
+    }
     if (p.attachments?.length) {
       const files=element("button","message-files-link",`${p.attachments.length} attached file${p.attachments.length===1?"":"s"} · View files ↗`);
       files.type="button";files.addEventListener("click",showConversationFiles);item.append(files);
@@ -448,7 +454,7 @@ $("#attach-files").addEventListener("change", async (event) => {
         if (!target) throw new Error("The original conversation is unavailable. Attach this file again.");
         if ((target.draftAttachments?.length||0)>=5) throw new Error("Send or remove an attachment first. Maximum 5 per message.");
         const attachment=await prepareAttachment(file,AbortSignal.any([controller.signal,AbortSignal.timeout(120000)]),progress,fileId);
-        const total=[...target.prompts.flatMap(p=>p.attachments||[]),...(target.draftAttachments||[]),attachment].reduce((n,a)=>n+a.size,0);
+        const total=[...target.prompts.filter(p=>!p.revisionOf).flatMap(p=>p.attachments||[]),...(target.draftAttachments||[]),attachment].reduce((n,a)=>n+a.size,0);
         if (total>10485760) { await removeFile(attachment.id); throw new Error("Files exceed 10 MB for this conversation. Start a new conversation."); }
         target.draftAttachments??=[];
         target.draftAttachments.push(attachment);
@@ -634,6 +640,31 @@ for (const button of document.querySelectorAll("[data-starter]"))
     input.dispatchEvent(new Event("input"));
     input.focus();
   });
+let editingPrompt;
+function openPromptEdit(c,p) {
+  editingPrompt={conversationId:c.id,source:p};
+  $("#edited-prompt").value=p.content;$("#edit-prompt-error").hidden=true;$("#edited-prompt").removeAttribute("aria-invalid");
+  $("#edit-prompt-note").textContent=p.attachments?.length?"Sends a new version with the same files. Your original question and answer stay saved.":"Sends a new version. Your original question and answer stay saved.";
+  $("#edit-prompt-dialog").showModal();
+}
+$("#cancel-prompt-edit").addEventListener("click",()=>$("#edit-prompt-dialog").close());
+$("#edited-prompt").addEventListener("input",()=>{$("#edit-prompt-error").hidden=true;$("#edited-prompt").removeAttribute("aria-invalid");});
+$("#edit-prompt-form").addEventListener("submit",event=>{
+  event.preventDefault();
+  const text=$("#edited-prompt").value.trim(),c=state.conversations.find(c=>c.id===editingPrompt?.conversationId),source=editingPrompt?.source;
+  let error=!text||Array.from(text).length>20000?"Use a question between 1 and 20,000 characters.":!user||staleTab||!c?"Reconnect and reload your workspace before editing.":text===source.content?"Change the question first, or use Regenerate for another answer.":"";
+  if(!error) {
+    const prompt={id:crypto.randomUUID(),content:text,revisionOf:source.revisionOf||source.id,createdAt:Date.now(),syncing:true,attachments:source.attachments||[]};
+    const job={id:crypto.randomUUID(),promptIds:[prompt.id],createdAt:Date.now(),status:"syncing"};
+    const action={type:"revise",conversationId:c.id,title:c.title,prompt,job};
+    c.prompts.push(prompt);c.jobs.push(job);outbox.push(action);
+    if(persist()) {
+      $("#edit-prompt-dialog").close();editingPrompt=null;render();chatScroll.jumpToLatest();announce("Edited question queued. Your original stays saved.");void flushOutbox();return;
+    }
+    c.prompts.pop();c.jobs.pop();outbox.pop();error="Could not save the edit. Free browser storage and try again.";
+  }
+  $("#edit-prompt-error").textContent=error;$("#edit-prompt-error").hidden=false;$("#edited-prompt").setAttribute("aria-invalid","true");$("#edited-prompt").focus();
+});
 let renamingId;
 $("#rename-conversation").addEventListener("click",()=>{
   const c=current();if(!user||!c?.remote)return;
@@ -868,9 +899,8 @@ function mergeOutbox() {
       state.conversations.unshift(c);
       restoreDraft(c);
     }
-    const list = action.type === "prompt" ? c.prompts : c.jobs;
-    const item = action.prompt || action.job;
-    if (!list.some((p) => p.id === item.id)) list.push(item);
+    if(action.prompt&&!c.prompts.some(p=>p.id===action.prompt.id)) c.prompts.push(action.prompt);
+    if(action.job&&!c.jobs.some(j=>j.id===action.job.id)) c.jobs.push(action.job);
   }
 }
 async function wake() {
@@ -907,7 +937,9 @@ async function flushOutbox() {
         for (const attachment of action.prompt.attachments||[]) {
           await uploadAttachment(owner,action.prompt.id,attachment,await getFile(attachment.id));
         }
-      } else if(action.type==="regenerate")
+      } else if(action.type==="revise")
+        await rpc("revise_prompt",{p_id:action.job.id,p_prompt_id:action.prompt.id,p_source_id:action.prompt.revisionOf,p_content:action.prompt.content});
+      else if(action.type==="regenerate")
         await rpc("regenerate_answer",{p_id:action.job.id,p_source_id:action.job.regenerationOf});
       else
         await rpc("compile_prompts", {

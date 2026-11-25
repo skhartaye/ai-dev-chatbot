@@ -198,3 +198,7 @@ that bypass conversation ownership. Answer exports stay local and need no AI cal
 ## Regenerating an answer
 
 Each completed cloud answer offers Regenerate beside Copy and Save .txt. It queues a new attempt against the original request's prompts, files, and earlier context; it never overwrites an existing answer or duplicates a file. Regenerated answers are labelled with their source answer. One regeneration per original request can be active at a time, with the same queue pacing, ownership checks, retries, and quota limits as ordinary messages. Pending delivery survives reload through the existing outbox.
+
+## Editing sent prompts
+
+Show Edit on saved sent prompts. Open a labelled native dialog with the full existing question. Cancel leaves both the sent prompt and unsent composer draft alone. Save & Send appends an edited question and a separate queued answer; it never mutates old questions or answers. Keep the same files by reference, preserve the context boundary of the original question, and label edited questions. Revisions use the existing durable outbox, so reloads and interrupted deliveries do not duplicate or lose edits.

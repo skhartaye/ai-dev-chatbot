@@ -502,6 +502,19 @@
       ><div class="noscript">Enable JavaScript to use Kahuron.</div></noscript
     >
 
+    <dialog id="edit-prompt-dialog" aria-labelledby="edit-prompt-title">
+      <h1 id="edit-prompt-title">Edit prompt</h1>
+      <form id="edit-prompt-form" action="/" method="post" aria-labelledby="edit-prompt-title">
+        <label for="edited-prompt">Question</label>
+        <textarea id="edited-prompt" name="question" rows="6" maxlength="20000" required autofocus autocomplete="off" aria-describedby="edit-prompt-note edit-prompt-error"></textarea>
+        <p id="edit-prompt-note">Sends a new version. Your original question and answer stay saved.</p>
+        <p id="edit-prompt-error" class="field-error" role="alert" hidden></p>
+        <div class="rename-actions">
+          <button type="button" class="text-button" id="cancel-prompt-edit">Cancel</button>
+          <button type="submit" class="primary-button">Save &amp; Send</button>
+        </div>
+      </form>
+    </dialog>
     <dialog id="rename-dialog" aria-labelledby="rename-title">
       <h2 id="rename-title">Rename conversation</h2>
       <form id="rename-form" action="/" method="post">

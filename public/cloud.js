@@ -67,8 +67,9 @@ export async function loadConversation(id) {
     prompts: prompts.map((p) => ({
       id: p.id,
       content: p.content,
+      revisionOf:p.revision_of,
       createdAt: Date.parse(p.created_at),
-      attachments: attachmentResult.data.filter(a=>a.prompt_id===p.id).map(a=>({id:a.id,name:a.name,mimeType:a.mime_type,size:a.size})),
+      attachments: attachmentResult.data.filter(a=>a.prompt_id===(p.revision_of||p.id)).map(a=>({id:a.id,name:a.name,mimeType:a.mime_type,size:a.size})),
     })),
     jobs: jobs.map((j) => ({
       id: j.id,

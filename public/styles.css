@@ -1922,6 +1922,40 @@ dialog > .text-button {
   padding: 28px;
   inline-size: min(440px, calc(100% - 24px));
 }
+#edit-prompt-dialog {
+  padding: 24px;
+  inline-size: min(620px, calc(100% - 24px));
+  max-block-size: calc(min(100dvh, var(--app-height, 100dvh)) - 24px);
+}
+#edit-prompt-title {
+  font-size: 1.4rem;
+  margin: 0 0 20px;
+  letter-spacing: -0.03em;
+}
+#edited-prompt {
+  inline-size: 100%;
+  min-block-size: 6rem;
+  max-block-size: 40dvh;
+  padding: 12px;
+  resize: vertical;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+#edit-prompt-note {
+  font-size: .75rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+#edit-prompt-dialog button { min-block-size: 48px; }
+#edit-prompt-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
 #rename-dialog h2 {
   font-size: 1.4rem;
   margin: 0 0 22px;
