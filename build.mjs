@@ -1,11 +1,13 @@
 import { build } from "esbuild";
 await build({
-  entryPoints: ["public/app.js"],
+  entryPoints: { bundle: "public/app.js" },
   bundle: true,
   format: "esm",
   platform: "browser",
   target: ["es2022"],
-  outfile: "public/bundle.js",
+  outdir: "public",
+  splitting: true,
+  chunkNames: "chunks/[name]-[hash]",
   minify: true,
   legalComments: "linked",
 });

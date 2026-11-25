@@ -83,7 +83,18 @@ See [market comparison](docs/market-positioning.md) for sourced positioning and 
 
 ## Verification
 
-Run `npm test` (ten checks) and `npm run build`. Tests use mocked provider requests and incur no API usage.
+Run `npm test` (eleven checks) and `npm run build`. Provider tests use mocked requests and incur no API usage.
+Answer formatting uses Marked and the native Sanitizer API where supported. DOMPurify
+is code-split and loaded only as a fallback. The DOM test verifies Markdown structure,
+unsafe element/attribute removal, unsafe link removal, and safe external link attributes.
+The browser fixture in `tests/browser-answer.mjs` can exercise both sanitizer paths.
+Its Chrome check and the latest formatting visual review were blocked by the missing
+Chrome extension connection; the DOM fallback test and production bundle passed.
+
+A normal four-bullet question completed in the live browser on Gemini 3.5 Flash-Lite
+on its first attempt (772 characters). Larger batches still encountered provider HTTP
+503 responses. The availability backup is covered by unit tests; its successful live
+recovery of that larger batch has not been verified.
 
 Interface checks in Chrome covered prompt saving, reload persistence, fixed
 compilation boundaries, empty-state validation, modal Escape/focus restoration,

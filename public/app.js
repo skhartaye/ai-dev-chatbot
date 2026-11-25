@@ -1,4 +1,5 @@
 import { reveal } from "./motion.js";
+import { renderAnswer } from "./render-answer.js";
 import {
   supabase,
   rpc,
@@ -654,8 +655,13 @@ function answerCard(job, index) {
     element("strong", "answer-heading", `Kahuron · Compilation ${index + 1}`),
     element("span", "job-status", jobLabel(job)),
   );
-  if (job.answer) item.append(element("div", "answer-content", job.answer));
-  else item.append(element("p", "", jobMessage(job)));
+  if (job.answer) {
+    const answer = element("div", "answer-content", job.answer);
+    item.append(answer);
+    void renderAnswer(answer, job.answer).catch(() => {
+      answer.textContent = job.answer;
+    });
+  } else item.append(element("p", "", jobMessage(job)));
   return item;
 }
 function connectionText() {

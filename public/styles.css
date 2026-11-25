@@ -580,7 +580,7 @@ kbd {
   margin: 0;
   padding: 0;
 }
-.prompt-list li {
+.prompt-list > li {
   max-inline-size: 94%;
   inline-size: fit-content;
   min-inline-size: min(340px, 100%);
@@ -1118,7 +1118,7 @@ dialog > .text-button {
     font-size: 0.75rem;
     margin-block-start: 8px;
   }
-  .prompt-list li {
+  .prompt-list > li {
     max-inline-size: 100%;
     min-inline-size: 0;
     padding: 16px 17px;
@@ -1344,4 +1344,63 @@ dialog > .text-button {
 .answer-card > p {
   margin-block-start: 12px;
   color: var(--muted);
+}
+
+.answer-content {
+  white-space: normal;
+}
+.answer-content > * + * {
+  margin-block-start: 1rem;
+}
+.answer-content ul {
+  list-style: disc;
+  padding-inline-start: 1.5rem;
+}
+.answer-content ol {
+  list-style: decimal;
+  padding-inline-start: 1.5rem;
+}
+.answer-content li + li {
+  margin-block-start: 0.5rem;
+}
+.answer-content pre {
+  white-space: pre;
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.answer-content code {
+  font-family: Consolas, monospace;
+  font-size: 0.9em;
+}
+.answer-content h1,
+.answer-content h2 {
+  font-size: 1.3rem;
+}
+.answer-content h3,
+.answer-content h4 {
+  font-size: 1.1rem;
+}
+.answer-content a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.answer-content blockquote {
+  margin-inline: 0;
+  padding-inline-start: 1rem;
+  border-inline-start: 3px solid var(--accent);
+}
+.answer-content table {
+  display: block;
+  max-inline-size: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.answer-content th,
+.answer-content td {
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+  text-align: start;
 }
