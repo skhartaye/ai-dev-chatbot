@@ -58,7 +58,7 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
         }
         const { data: prompts, error } = await db
           .from("prompts")
-          .select("content,created_at,id")
+          .select("content,created_at,id,revision_of")
           .eq("compilation_id", turn.id)
           .order("created_at")
           .order("id");
@@ -67,12 +67,20 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
           unavailable.retryable = true;
           throw unavailable;
         }
+        let contextTurn=turn, attachmentTurnId=turn.id;
+        if(prompts[0].revision_of) {
+          const source=await db.from("prompts").select("compilation_id").eq("id",prompts[0].revision_of).eq("conversation_id",job.conversation_id).single();
+          if(source.error||!source.data?.compilation_id) throw new Error("Original prompt unavailable.");
+          const boundary=await db.from("compilations").select("id,created_at").eq("id",source.data.compilation_id).eq("conversation_id",job.conversation_id).single();
+          if(boundary.error||!boundary.data) throw new Error("Original context unavailable.");
+          contextTurn=boundary.data;attachmentTurnId=contextTurn.id;
+        }
         const { data: history, error: historyError } = await db
           .from("compilations")
           .select("answer,created_at,id")
           .eq("conversation_id", job.conversation_id)
           .eq("status", "complete")
-          .lt("created_at", turn.created_at)
+          .lt("created_at", contextTurn.created_at)
           .order("created_at")
           .order("id");
         if (historyError) {
@@ -86,7 +94,7 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
             ]
           : [];
         const input = [...context, ...prompts.map((p) => `CURRENT USER MESSAGE:\n${p.content}`)];
-        const attachments=await loadAttachments(db,job.conversation_id,[turn.id,...(history||[]).map(j=>j.id)]);
+        const attachments=await loadAttachments(db,job.conversation_id,[attachmentTurnId,...(history||[]).map(j=>j.id)]);
         if (input.reduce((size, text) => size + text.length, 0) + attachments.reduce((n,a)=>n+(a.text?.length||0)+(a.details?JSON.stringify(a.details).length:0),0) > 200000) {
           const error = new Error(
             "Start a new conversation to reduce context.",

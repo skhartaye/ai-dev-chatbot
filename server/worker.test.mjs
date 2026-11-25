@@ -2,6 +2,25 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createWorker, retryPlan } from "./worker.mjs";
 
+for(const regenerate of [false,true]) test(`edited request ${regenerate?'regeneration':'first answer'} uses revised question with original context and files`,async()=>{
+  const queries=[],calls=[];
+  const db={rpc:async(name,args)=>{calls.push([name,args]);return {data:name==="claim_compilation"?[{id:"new",conversation_id:"chat",...(regenerate?{regeneration_of:"edited"}:{}),created_at:"2026-11-25",lease_token:"lease"}]:true}},
+    from(table){const q={table};queries.push(q);const chain={
+      select(){return chain},eq(k,v){q[k]=v;return chain},lt(k,v){q.before=v;return chain},in(k,v){q.scope=v;return chain},order(){return chain},
+      single:async()=>({data:table==="prompts"?{compilation_id:"original"}:{id:q.id,created_at:q.id==="original"?"2026-11-23":"2026-11-24"}}),
+      then(resolve){resolve({data:table==="prompts"?[{content:"Revised question",revision_of:"source-prompt"}]:[]})}
+    };return chain}
+  };
+  const worker=createWorker(db,{generate:async input=>{
+    assert.deepEqual(input,["CURRENT USER MESSAGE:\nRevised question"]);return {text:"Revised answer",model:"test"};
+  }});
+  await worker.tick();worker.stop();
+  assert.equal(queries.find(q=>q.compilation_id).compilation_id,regenerate?"edited":"new");
+  assert.equal(queries.find(q=>q.before).before,"2026-11-23");
+  assert.deepEqual(queries.find(q=>q.table==="attachments").scope,["original"]);
+  assert.equal(calls.at(-1)[0],"finish_compilation");
+});
+
 test("regeneration reuses original prompts, context boundary and attachment scope without overwriting the source",async()=>{
   const queries=[],calls=[];
   const db={rpc:async(name,args)=>{calls.push([name,args]);return {data:name==="claim_compilation"?[{id:"new",conversation_id:"chat",regeneration_of:"original",created_at:"2026-11-25",lease_token:"lease"}]:true}},
