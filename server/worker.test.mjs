@@ -71,6 +71,7 @@ test("worker accepts one lease, preserves ordered prompts, and stores a complete
         lt() {
           return chain;
         },
+        in() { return chain; },
         order() {
           return chain;
         },
@@ -123,6 +124,7 @@ test("a quota failure reschedules the leased job instead of losing it", async ()
     lt() {
       return this;
     },
+    in() { return this; },
     order() {
       return this;
     },
@@ -141,7 +143,8 @@ test("a quota failure reschedules the leased job instead of losing it", async ()
               : true,
         };
       },
-      from() {
+      from(table) {
+        if(table==="attachments") return {select(){return this},eq(){return this},in(){return this},order(){return Promise.resolve({data:[]})}};
         return chain;
       },
     },

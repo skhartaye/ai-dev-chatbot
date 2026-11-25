@@ -9,6 +9,7 @@ export async function generateAnswer(
     fetchImpl = fetch,
     model = GEMINI_MODEL,
     timeoutMs = 120_000,
+    attachments = [],
   } = {},
 ) {
   if (!apiKey) throw new Error("GEMINI_API_KEY is required on the server.");
@@ -36,7 +37,10 @@ export async function generateAnswer(
             },
           ],
         },
-        contents: [{ role: "user", parts: prompts.map((text) => ({ text })) }],
+        contents: [{ role: "user", parts: [
+          ...attachments.flatMap(file=>[{text:`Attached file: ${file.name}`},file.text!==undefined?{text:file.text}:{inlineData:{mimeType:file.mimeType,data:file.data}}]),
+          ...prompts.map((text) => ({ text })),
+        ] }],
         generationConfig: { maxOutputTokens: 8192 },
       }),
     },
