@@ -1,3 +1,4 @@
+import {createChatScroll} from "./chat-scroll.js";
 import { reveal } from "./motion.js";
 import { renderAnswer } from "./render-answer.js";
 import { prepareAttachment, getFile, removeFile } from "./attachment-store.js";
@@ -40,6 +41,7 @@ let sessionLoading = false;
 let startingGuest = false;
 let extractionController;
 const preparingAttachments=new Map();
+const chatScroll=createChatScroll($("#message-area"),$("#prompt-list"),$("#jump-to-latest"));
 const sidebar = $(".sidebar");
 const mobileLayout = matchMedia("(max-width: 860px)");
 
@@ -235,6 +237,7 @@ function renderNav() {
 function render() {
   const c = current();
   if (!c) return;
+  chatScroll.beforeRender(c.id);
   document.title = `${c.title} · Kahuron`;
   $("#conversation-title").textContent = c.title;
   if (document.activeElement !== $("#prompt") || $("#prompt").value !== c.draft)
@@ -250,6 +253,7 @@ function render() {
   const pendingIds = new Set(unassigned.map((p) => p.id));
   for (const [index, p] of c.prompts.entries()) {
     const item = element("li");
+    item.dataset.messageId=p.id;
     const top = element("div", "prompt-top");
     const meta = element("div", "prompt-meta");
     meta.append(
@@ -356,6 +360,7 @@ function render() {
     $("#job-list").prepend(card);
   }
   connectionText();
+  chatScroll.afterRender();
 }
 function clearError() {
   $("#prompt-error").hidden = true;
@@ -544,7 +549,7 @@ function savePrompt(send) {
     );
   if (saved && send) queueCompilation();
   else if (user && saved) void flushOutbox();
-  $("#prompt-list").lastElementChild?.scrollIntoView({ block: "nearest" });
+  chatScroll.jumpToLatest();
   reveal($("#prompt-list").lastElementChild);
 }
 $("#compile").addEventListener("click", () => queueCompilation());
@@ -775,6 +780,7 @@ function jobMessage(job) {
 }
 function answerCard(job, index,c) {
   const item = element("li", "answer-card");
+  item.dataset.messageId=job.id;
   item.append(
     element("strong", "answer-heading", `Kahuron · Compilation ${index + 1}`),
     element("span", "job-status", jobLabel(job)),

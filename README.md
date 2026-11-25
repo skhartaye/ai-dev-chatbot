@@ -251,3 +251,9 @@ or encrypted PDFs are rejected. Edited pages are rasterized at up to 200 DPI;
 existing text layers/interactivity on those pages are discarded. Other pages are
 preserved. Exact custom-font matching, paragraph reflow and secure redaction are not supported.
 No extra OCR API, account or provider charge is introduced.
+
+
+## Interface design
+
+Use [DESIGN.md](DESIGN.md) before changing UI. Semantic tokens live in
+`public/styles.css`; attachments and review components reuse those tokens.
