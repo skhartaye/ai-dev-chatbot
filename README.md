@@ -140,6 +140,9 @@ make retries idempotent. Acknowledged browser delivery copies are released.
 
 The server reads files from the current batch and earlier completed batches in
 the same conversation, so follow-up questions do not require reattaching.
+Current and historical attachments are explicitly labeled for the model. When
+new files are attached, ambiguous requests such as "what is this about" refer to
+the new files; historical files are background unless explicitly revisited.
 Files are transmitted to Google for AI processing when a message is sent.
 Guest access stays tied to the browser identity; clearing browser data loses it.
 
@@ -148,3 +151,7 @@ integration check for ownership, immutability, readiness and retry behavior. It
 creates isolated guest test records and a small AI job, and never runs in deploy
 builds. Samples live in tests/fixtures. For a local CSP-matched preview:
 npm run build, then node tests/preview-server.mjs (http://127.0.0.1:4173).
+Run node tests/check-file-scope.mjs for an isolated live regression that attaches
+an old invoice, then a new supplier catalog, and verifies that an ambiguous new
+question focuses on the catalog while follow-ups still work. An optional commit
+prefix argument waits for that backend revision before testing.
