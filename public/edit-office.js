@@ -1,5 +1,12 @@
 import { unzipSync, zipSync, strFromU8, strToU8 } from "fflate";
 import { checkOfficeArchive, MAX_FILE_BYTES } from "./extract-file.js";
+import {
+  validateFormat,
+  formatWordParagraph,
+  formatDescription,
+} from "./office-format.js";
+import { editExcel, addressParts, rangeAddresses } from "./edit-excel.js";
+import { validateFormula } from "./formula-engine.js";
 
 const WORD = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const SHEET = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
@@ -40,11 +47,65 @@ export function validateEditPlan(plan, files) {
       throw new Error(
         "The AI returned an invalid edit. Ask it to propose the changes again.",
       );
+    if (c.format) validateFormat(c.format, /\.docx$/i.test(file.name));
+    if (/\p{Cc}/u.test(String(c.replace ?? "").replace(/[\t\r\n]/g, "")))
+      throw new Error(
+        "The replacement contains unsupported control characters.",
+      );
+    if (/\.xlsx$/i.test(file.name) && (c.cell || c.range)) {
+      if (typeof c.sheet !== "string" || !c.sheet)
+        throw new Error("Excel edits must identify the worksheet.");
+      if (c.range) {
+        rangeAddresses(c.range);
+        if (c.cell || !c.format || "replace" in c || "formula" in c)
+          throw new Error(
+            "Range edits support formatting only. Use individual cells for values and formulas.",
+          );
+      } else {
+        addressParts(c.cell);
+        if (!("expected" in c))
+          throw new Error(
+            "A cell edit must include its expected original value, or null for an empty cell.",
+          );
+        if (
+          (!["string", "number", "boolean"].includes(typeof c.expected) &&
+            c.expected !== null) ||
+          (typeof c.expected === "number" && !Number.isFinite(c.expected))
+        )
+          throw new Error("Invalid expected cell value.");
+      }
+      if (c.formula !== undefined) {
+        validateFormula(c.formula);
+        if ("replace" in c)
+          throw new Error(
+            "Use either a formula or a literal cell replacement.",
+          );
+      }
+      if (!c.format && !("formula" in c) && !("replace" in c))
+        throw new Error("Specify a value, formula, or formatting change.");
+      if (
+        "replace" in c &&
+        ((!["string", "number", "boolean"].includes(typeof c.replace) &&
+          c.replace !== null) ||
+          (typeof c.replace === "number" && !Number.isFinite(c.replace)) ||
+          String(c.replace ?? "").length > 10000)
+      )
+        throw new Error("Invalid cell replacement.");
+      continue;
+    }
+    if (
+      /\.xlsx$/i.test(file.name) &&
+      ("formula" in c || (!c.format && !("replace" in c)))
+    )
+      throw new Error(
+        "Use an explicit cell address and expected original value for a formula edit.",
+      );
     if (
       typeof c.find !== "string" ||
       !c.find.length ||
       c.find.length > 10000 ||
-      (!["string", "number", "boolean"].includes(typeof c.replace) &&
+      ("replace" in c &&
+        !["string", "number", "boolean"].includes(typeof c.replace) &&
         c.replace !== null) ||
       (typeof c.replace === "number" && !Number.isFinite(c.replace)) ||
       String(c.replace ?? "").length > 10000 ||
@@ -57,7 +118,9 @@ export function validateEditPlan(plan, files) {
       );
     if (
       /\.docx$/i.test(file.name) &&
-      (typeof c.replace !== "string" || /[\r\n\t]/.test(c.find + c.replace))
+      (("replace" in c && typeof c.replace !== "string") ||
+        (!("replace" in c) && !c.format) ||
+        /[\r\n\t]/.test(c.find + (c.replace ?? "")))
     )
       throw new Error("Word edits must replace text within one paragraph.");
     if (/\.xlsx$/i.test(file.name) && (typeof c.sheet !== "string" || !c.sheet))
@@ -105,7 +168,7 @@ function replaceParagraph(p, change) {
   }
   return starts.length;
 }
-export async function editOffice(blob, plan) {
+export async function editOffice(blob, plan, options = {}) {
   validateEditPlan(plan, [{ id: plan.fileId, name: plan.name }]);
   if (blob.size > MAX_FILE_BYTES)
     throw new Error("Choose an original smaller than 10 MB.");
@@ -121,6 +184,7 @@ export async function editOffice(blob, plan) {
       "Signed documents, macros, and embedded active content cannot be edited here.",
     );
   const log = [];
+  let calculations = [];
   if (/\.docx$/i.test(plan.name)) {
     if (!archive["word/document.xml"])
       throw new Error("Choose the original DOCX document.");
@@ -140,7 +204,11 @@ export async function editOffice(blob, plan) {
       );
     for (const change of plan.changes) {
       const count = elements(doc, WORD, "p").reduce(
-        (n, p) => n + replaceParagraph(p, change),
+        (n, p) =>
+          n +
+          (change.format
+            ? formatWordParagraph(p, change)
+            : replaceParagraph(p, change)),
         0,
       );
       if (count !== change.count)
@@ -149,114 +217,16 @@ export async function editOffice(blob, plan) {
         );
       log.push({
         ...change,
+        replace: "replace" in change ? change.replace : change.find,
+        formatLabel: formatDescription(change.format),
         location: `${count} Word match${count === 1 ? "" : "es"}`,
       });
     }
     archive["word/document.xml"] = serialize(doc);
   } else {
-    if (!archive["xl/workbook.xml"] || !archive["xl/_rels/workbook.xml.rels"])
-      throw new Error("Choose the original XLSX workbook.");
-    const workbook = xml(archive["xl/workbook.xml"]);
-    if (
-      elements(workbook, SHEET, "workbookProtection").some((p) =>
-        Array.from(p.attributes).some(
-          (a) =>
-            /password|hash/i.test(a.name) ||
-            (/^lock/.test(a.name) && /^(1|true)$/i.test(a.value)),
-        ),
-      )
-    )
-      throw new Error("This workbook is protected.");
-    const relationships = xml(archive["xl/_rels/workbook.xml.rels"]);
-    const shared = archive["xl/sharedStrings.xml"]
-      ? elements(xml(archive["xl/sharedStrings.xml"]), SHEET, "si").map((si) =>
-          elements(si, SHEET, "t")
-            .map((t) => t.textContent)
-            .join(""),
-        )
-      : [];
-    const sheets = new Map();
-    for (const sheet of elements(workbook, SHEET, "sheet")) {
-      const id = sheet.getAttributeNS(
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-        "id",
-      );
-      const rel = Array.from(relationships.documentElement.children).find(
-        (r) => r.getAttribute("Id") === id,
-      );
-      const target = rel?.getAttribute("Target") || "";
-      const path = target.startsWith("/") ? target.slice(1) : `xl/${target}`;
-      if (
-        !archive[path] ||
-        target.includes("..") ||
-        rel.getAttribute("TargetMode") === "External"
-      )
-        throw new Error(
-          "This workbook uses an unsupported worksheet relationship.",
-        );
-      const doc = xml(archive[path]);
-      if (elements(doc, SHEET, "f").length)
-        throw new Error(
-          "This workbook contains formulas. Editing with verified formula recalculation is not available yet.",
-        );
-      sheets.set(sheet.getAttribute("name"), { doc, path });
-    }
-    for (const change of plan.changes) {
-      const sheet = sheets.get(change.sheet);
-      if (!sheet) throw new Error(`Worksheet “${change.sheet}” was not found.`);
-      if (elements(sheet.doc, SHEET, "sheetProtection").length)
-        throw new Error("This worksheet is protected.");
-      const matches = elements(sheet.doc, SHEET, "c").filter((cell) => {
-        const type = cell.getAttribute("t"),
-          value = elements(cell, SHEET, "v")[0]?.textContent || "";
-        return (
-          (type === "s"
-            ? shared[Number(value)]
-            : type === "inlineStr"
-              ? elements(cell, SHEET, "t")
-                  .map((t) => t.textContent)
-                  .join("")
-              : type === "b"
-                ? value === "1"
-                  ? "true"
-                  : "false"
-                : value) === change.find
-        );
-      });
-      if (matches.length !== change.count)
-        throw new Error(
-          `Expected ${change.count} cell(s) matching “${change.find.slice(0, 80)}” in ${change.sheet}, found ${matches.length}. No file was changed.`,
-        );
-      for (const cell of matches) {
-        if (elements(cell, SHEET, "extLst").length)
-          throw new Error("This cell contains unsupported extended data.");
-        for (const child of Array.from(cell.children))
-          if (["v", "is", "f"].includes(child.localName)) child.remove();
-        const value = change.replace;
-        if (typeof value === "string") {
-          // Literal strings, including leading =, never become executable formulas.
-          cell.setAttribute("t", "inlineStr");
-          const inline = sheet.doc.createElementNS(SHEET, "is"),
-            t = sheet.doc.createElementNS(SHEET, "t");
-          t.setAttributeNS(XML, "xml:space", "preserve");
-          t.textContent = value;
-          inline.append(t);
-          cell.append(inline);
-        } else if (value === null) cell.removeAttribute("t");
-        else {
-          cell.setAttribute("t", typeof value === "boolean" ? "b" : "n");
-          const v = sheet.doc.createElementNS(SHEET, "v");
-          v.textContent =
-            typeof value === "boolean" ? (value ? "1" : "0") : String(value);
-          cell.append(v);
-        }
-      }
-      log.push({
-        ...change,
-        location: `${change.sheet} · ${matches.map((c) => c.getAttribute("r")).join(", ")}`,
-      });
-    }
-    for (const { doc, path } of sheets.values()) archive[path] = serialize(doc);
+    const result = await editExcel(archive, plan, options);
+    log.push(...result.log);
+    calculations = result.calculations;
   }
   const bytes = zipSync(archive, { level: 6 });
   if (bytes.length > MAX_FILE_BYTES)
@@ -268,6 +238,7 @@ export async function editOffice(blob, plan) {
         : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     }),
     log,
+    calculations,
     name: plan.name.replace(/\.(docx|xlsx)$/i, "-edited.$1"),
   };
 }

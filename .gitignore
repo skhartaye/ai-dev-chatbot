@@ -4,6 +4,8 @@ public/chunks/
 public/extraction-assets/
 public/extract-office.worker.js*
 !public/extract-office.worker.source.js
+public/calculate.worker.js*
+!public/calculate.worker.source.js
 .env
 .env.*
 !.env.example

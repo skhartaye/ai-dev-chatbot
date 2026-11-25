@@ -11,7 +11,9 @@
     "build": "node build.mjs"
   },
   "dependencies": {
+    "@ironcalc/wasm": "^0.9.1",
     "@supabase/supabase-js": "^2.119.2",
+    "@xmldom/xmldom": "^0.8.15",
     "dompurify": "^3.5.0",
     "fflate": "^0.8.3",
     "lucide": "^1.79.0",

@@ -8,7 +8,7 @@ for (const name of ["chunks","extraction-assets"]) {
   await rm(target,{recursive:true,force:true});
 }
 await build({
-  entryPoints: { bundle: "public/app.js", "extract-office.worker": "public/extract-office.worker.source.js" },
+  entryPoints: { bundle: "public/app.js", "extract-office.worker": "public/extract-office.worker.source.js", "calculate.worker":"public/calculate.worker.source.js" },
   bundle: true,
   format: "esm",
   platform: "browser",
@@ -25,6 +25,10 @@ await Promise.all([
   cp("node_modules/pdfjs-dist/LICENSE", "public/extraction-assets/licenses/pdfjs-dist.txt"),
   cp("node_modules/lucide/LICENSE", "public/extraction-assets/licenses/lucide.txt"),
   cp("node_modules/fflate/LICENSE", "public/extraction-assets/licenses/fflate.txt"),
+  cp("node_modules/@ironcalc/wasm/wasm_bg.wasm","public/extraction-assets/ironcalc.wasm"),
+  cp("node_modules/@ironcalc/wasm/LICENSE-MIT","public/extraction-assets/licenses/ironcalc.txt"),
+  cp("node_modules/@ironcalc/wasm/THIRD-PARTY-NOTICES.md","public/extraction-assets/licenses/ironcalc-third-party.txt"),
+  cp("node_modules/@xmldom/xmldom/LICENSE","public/extraction-assets/licenses/xmldom.txt"),
   cp("node_modules/pdfjs-dist/build/pdf.worker.min.mjs", "public/extraction-assets/pdf.worker.mjs"),
   cp("node_modules/pdfjs-dist/cmaps", "public/extraction-assets/cmaps",{recursive:true}),
   cp("node_modules/pdfjs-dist/standard_fonts", "public/extraction-assets/standard_fonts",{recursive:true}),

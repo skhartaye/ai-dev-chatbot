@@ -12,7 +12,9 @@ const el = (tag, text, className) => {
 let dialog,
   url,
   generation = 0;
+let editController;
 export function closeEditReview() {
+  editController?.abort();
   generation++;
   if (dialog?.open) dialog.close();
   if (url) URL.revokeObjectURL(url);
@@ -90,7 +92,11 @@ async function openReview(plan, file) {
     choose.disabled = true;
     download.hidden = true;
     try {
-      const result = await editOffice(original, plan);
+      editController?.abort();
+      editController = new AbortController();
+      const result = await editOffice(original, plan, {
+        signal: editController.signal,
+      });
       if (own !== generation || !activeDialog.open) return;
       body.replaceChildren();
       for (const change of result.log) {
@@ -102,8 +108,24 @@ async function openReview(plan, file) {
           el("span", "After", "edit-label"),
           el("ins", String(change.replace ?? "(empty)")),
         );
+        if (change.formatLabel)
+          row.append(
+            el("p", `Formatting · ${change.formatLabel}`, "edit-format-label"),
+          );
+        if (change.result !== undefined)
+          row.append(
+            el("p", `Calculated result · ${change.result}`, "edit-result"),
+          );
         body.append(row);
       }
+      if (result.calculations?.length)
+        body.append(
+          el(
+            "p",
+            `${result.calculations.length} formula${result.calculations.length === 1 ? "" : "s"} recalculated and checked.`,
+            "edit-result",
+          ),
+        );
       if (url) URL.revokeObjectURL(url);
       url = URL.createObjectURL(result.blob);
       download.href = url;
@@ -135,6 +157,7 @@ async function openReview(plan, file) {
         (await downloadAttachment(file.id));
       const text = await extractFile(original, {
         signal: AbortSignal.timeout(120000),
+        includeCellMap: (await source.text()).includes("[KAHURON CELL MAP]"),
       });
       if (text !== (await source.text()))
         throw new Error(

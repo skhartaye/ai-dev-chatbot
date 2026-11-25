@@ -29,7 +29,7 @@ export function checkOfficeArchive(buffer) {
   }
 }
 
-function readOffice(buffer, extension, signal) {
+function readOffice(buffer, extension, signal,includeCellMap) {
   return new Promise((resolve, reject) => {
     const worker = new Worker("/extract-office.worker.js", { type: "module" });
     const finish = (error, text) => {
@@ -41,11 +41,11 @@ function readOffice(buffer, extension, signal) {
     signal.addEventListener("abort", abort, { once: true });
     worker.onerror = () => finish(new Error("The document reader could not start. Reload and try again."));
     worker.onmessage = ({ data }) => finish(data.error ? new Error(data.error) : null, data.text);
-    worker.postMessage({ buffer, extension }, [buffer]);
+    worker.postMessage({ buffer, extension,includeCellMap }, [buffer]);
   });
 }
 
-export async function extractFile(file, { signal }) {
+export async function extractFile(file, { signal,includeCellMap=true }) {
   const extension = validateFile(file);
   signal.throwIfAborted();
   let text;
@@ -54,7 +54,7 @@ export async function extractFile(file, { signal }) {
     const buffer = await file.arrayBuffer();
     checkOfficeArchive(buffer);
     signal.throwIfAborted();
-    text = await readOffice(buffer, extension, signal);
+    text = await readOffice(buffer, extension, signal,includeCellMap);
   } else throw new Error("PDFs and images are read directly by AI.");
   signal.throwIfAborted();
   if (!text?.trim()) throw new Error("No readable document text found.");

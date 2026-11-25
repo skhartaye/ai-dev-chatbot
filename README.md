@@ -170,12 +170,28 @@ For older attachments, cleared browser data, or another device, Choose original
 file checks that its extracted text matches the saved attachment before editing.
 Original bytes and edited copies are not uploaded by the review/download flow.
 
-Supported: paragraph text replacements across Word runs and whole Excel cell
-value replacements scoped by worksheet and exact match count (50 edits/file).
-Other ZIP parts and cell styles are preserved; replacement text inherits the
-first matching Word run's formatting. This is a change preview, not a full Office
-layout preview. Formatting, structural edits, formulas, protected/signed files,
-active embedded content and Word fields/tracked changes are not supported.
-Workbooks containing formulas are blocked until verified recalculation exists.
-PDF/image editing remains unavailable. All edits are validated locally; model
-output is data, never code. ZIP expansion limits apply before decompression.
+Supported: Word paragraph text replacements plus bold, italic, underline, font,
+size, text color, shading and paragraph alignment. Formatting affects the selected
+text only; surrounding runs and unrequested properties stay intact. Excel supports
+cell values, explicit cell formulas, font/fill/alignment/wrapping, and number formats.
+Format-only ranges are limited to 1,000 cells. Plans contain expected source values
+or exact match counts; mismatches block download. Review shows formatting settings,
+formulas and verified results. This is a change preview, not a full Office layout preview.
+
+Excel formulas and dependencies recalculate with self-hosted IronCalc 0.9.1 in a
+terminable browser worker (15-second deadline). Typed cached results are written
+without rebuilding workbook styles/charts. Errors and unsupported formulas block
+the download. Limits: 50 sheets, 20,000 populated cells, 2,000 formulas. External links,
+web/DDE/random functions, shared/array/spill/table formulas, ISO date cells and the
+1904 date system are unsupported. Ordinary scalar arithmetic, SUM/AVERAGE/IF and
+cross-sheet references are tested. Compatibility is not identical to Microsoft Excel.
+The CSP permits self-hosted WebAssembly through wasm-unsafe-eval; JavaScript eval
+and inline scripts remain blocked. IronCalc MIT and bundled third-party notices ship
+with the self-hosted assets. No paid formula service or extra upload is used.
+
+New Excel attachments include a cell/formula map in their AI text payload. For older
+attachments, re-upload to supply coordinates before requesting formula edits. The
+original-file chooser still accepts older extracted-text payloads. Structural edits,
+protected/signed files, active embedded content and Word fields/tracked changes
+remain unsupported. PDF/image editing remains unavailable. AI output is validated
+data, never JavaScript. ZIP expansion limits apply before decompression.

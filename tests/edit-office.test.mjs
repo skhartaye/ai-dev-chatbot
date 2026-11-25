@@ -149,7 +149,7 @@ test("Excel edits preserve numeric types and styles, use literal strings, and va
         { sheet: "Orders", find: "0", replace: 1, count: 1 },
       ]),
     ),
-    /contains formulas/,
+    /found 0/,
   );
 });
 
