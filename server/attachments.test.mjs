@@ -8,7 +8,7 @@ test('Gemini receives actual PDF/image bytes and converted Office text alongside
     const body=JSON.parse(options.body),parts=body.contents[0].parts;
     assert.equal(parts[0].text,'CURRENT ATTACHMENT: scan.pdf');
     assert.equal(parts[2].text,'EARLIER ATTACHMENT (background only): table.xlsx');
-    assert.match(body.systemInstruction.parts[0].text,/refer to CURRENT ATTACHMENTS only/);
+    assert.match(body.systemInstruction.parts.map(p=>p.text).join('\n'),/refer to CURRENT ATTACHMENTS only/);
     assert.deepEqual(parts[1],{inlineData:{mimeType:'application/pdf',data:'JVBERi0='}});
     assert.equal(parts[3].text,'Item\tAmount\nMango\t450');
     assert.equal(parts.at(-1).text,'What is shown?');

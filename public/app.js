@@ -278,7 +278,7 @@ function render() {
     }
     list.append(item);
     for (const job of c.jobs.filter((j) => j.promptIds.at(-1) === p.id))
-      list.append(answerCard(job, c.jobs.indexOf(job)));
+      list.append(answerCard(job, c.jobs.indexOf(job),c));
   }
   $("#pending-badge").textContent = unassigned.length;
   $("#pending-open-count").textContent = unassigned.length;
@@ -378,6 +378,11 @@ function renderAttachments(c,animate=false) {
 }
 $("#new-conversation").addEventListener("click", makeConversation);
 $("#search").addEventListener("input", renderNav);
+window.addEventListener('kahuron-edit-file',({detail})=>{
+  const input=$("#prompt");
+  input.value+=(input.value?'\n':'')+`Edit the attached file “${detail.name}”: `;
+  input.dispatchEvent(new Event('input'));input.focus();
+});
 $("#prompt").addEventListener("input", () => {
   clearError();
   const c = current();
@@ -768,7 +773,7 @@ function jobMessage(job) {
       : "Saved in your workspace. Processing starts when capacity is available.";
   return "Waiting to sync. Keep this browser open until the compilation is saved online.";
 }
-function answerCard(job, index) {
+function answerCard(job, index,c) {
   const item = element("li", "answer-card");
   item.append(
     element("strong", "answer-heading", `Kahuron · Compilation ${index + 1}`),
@@ -777,7 +782,7 @@ function answerCard(job, index) {
   if (job.answer) {
     const answer = element("div", "answer-content", job.answer);
     item.append(answer);
-    void renderAnswer(answer, job.answer).catch(() => {
+    void renderAnswer(answer, job.answer,{files:c.prompts.flatMap(p=>p.attachments||[])}).catch(() => {
       answer.textContent = job.answer;
     });
   } else item.append(element("p", "", jobMessage(job)));
@@ -862,7 +867,7 @@ async function flushOutbox() {
       outbox.shift();
       const persisted=persist();
       if (persisted && action.type==="prompt")
-        for (const attachment of action.prompt.attachments||[]) void removeFile(attachment.id).catch(()=>{});
+        for (const attachment of action.prompt.attachments||[]) void removeFile(attachment.id,true).catch(()=>{});
       deliveryError = "";
     }
   } catch (error) {

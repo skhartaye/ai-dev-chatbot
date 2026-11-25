@@ -16,7 +16,7 @@ export async function loadAttachments(db,conversationId,compilationIds) {
     if (file.mime_type==="text/plain") {
       const text=new TextDecoder("utf-8",{fatal:true}).decode(bytes);
       if(text.length>100000) throw new Error("Document text exceeds context limit.");
-      result.push({name:file.name,text,scope});
+      result.push({id:file.id,name:file.name,text,scope});
     } else {
       const valid=file.mime_type==="application/pdf"?bytes.subarray(0,5).toString()==="%PDF-":file.mime_type==="image/png"?bytes[0]===137&&bytes.subarray(1,4).toString()==="PNG":file.mime_type==="image/jpeg"?bytes[0]===255&&bytes[1]===216:file.mime_type==="image/webp"?bytes.subarray(0,4).toString()==="RIFF"&&bytes.subarray(8,12).toString()==="WEBP":false;
       if(!valid) throw new Error("Invalid attachment format.");

@@ -24,6 +24,7 @@ await Promise.all([
   ...["mammoth", "read-excel-file"].map(name => cp(`node_modules/${name}/LICENSE`, `public/extraction-assets/licenses/${name}.txt`)),
   cp("node_modules/pdfjs-dist/LICENSE", "public/extraction-assets/licenses/pdfjs-dist.txt"),
   cp("node_modules/lucide/LICENSE", "public/extraction-assets/licenses/lucide.txt"),
+  cp("node_modules/fflate/LICENSE", "public/extraction-assets/licenses/fflate.txt"),
   cp("node_modules/pdfjs-dist/build/pdf.worker.min.mjs", "public/extraction-assets/pdf.worker.mjs"),
   cp("node_modules/pdfjs-dist/cmaps", "public/extraction-assets/cmaps",{recursive:true}),
   cp("node_modules/pdfjs-dist/standard_fonts", "public/extraction-assets/standard_fonts",{recursive:true}),

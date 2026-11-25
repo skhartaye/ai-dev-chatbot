@@ -30,6 +30,7 @@ function blobUrl(file,blob) {
   return urls.get(file.id);
 }
 export function resetAttachmentUI() {
+  window.dispatchEvent(new Event('kahuron-close-edits'));
   previewGeneration++;
   if(preview.open)preview.close();
   void pdfPreview?.destroy();pdfPreview=null;
@@ -68,6 +69,9 @@ $("#files-empty-icon").append(fileIcon(FolderOpen,{width:34,height:34}));
 $("#files-choose").addEventListener("click",()=>{closePanel();$("#attach-files").click();});
 $("#preview-close").append(fileIcon(X));
 $("#preview-download").prepend(fileIcon(Download));
+const requestEdits=node('button','file-download','Request edits');requestEdits.type='button';requestEdits.hidden=true;
+$("#preview-download").before(requestEdits);
+requestEdits.addEventListener('click',()=>{const file=previewFile;if(!file)return;preview.close();closePanel();window.dispatchEvent(new CustomEvent('kahuron-edit-file',{detail:{name:file.name}}));});
 $("#pdf-previous").append(fileIcon(ChevronLeft));
 $("#pdf-next").append(fileIcon(ChevronRight));
 preview.addEventListener("close",()=>{if(preview.open)return;previewGeneration++;void pdfPreview?.destroy();pdfPreview=null;$("#preview-image").removeAttribute("src");});
@@ -173,6 +177,7 @@ async function openPreview(file) {
   const generation=++previewGeneration;
   $("#preview-title").textContent=file.name;
   $("#preview-kind").textContent=filePresentation(file).label;
+  requestEdits.hidden=!/\.(docx|xlsx)$/i.test(file.name);
   $("#preview-status").textContent="Opening private preview…";
   for(const id of ["preview-image","preview-text","preview-pdf","pdf-controls","preview-download"])$("#"+id).hidden=true;
   $("#preview-retry").hidden=true;

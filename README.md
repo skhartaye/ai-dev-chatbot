@@ -155,3 +155,27 @@ Run node tests/check-file-scope.mjs for an isolated live regression that attache
 an old invoice, then a new supplier catalog, and verifies that an ambiguous new
 question focuses on the catalog while follow-ups still work. An optional commit
 prefix argument waits for that backend revision before testing.
+
+## Editing Office attachments
+
+Ask the AI to change text in an attached DOCX or literal values in an XLSX.
+The answer offers Review edits, validates exact match counts against the original,
+shows before/after changes, then provides a separate -edited download. Originals
+and messages are immutable. A downloaded edit is not automatically AI context;
+attach it to ask follow-up questions about that version.
+
+Original Office bytes for new uploads are retained in IndexedDB on the upload
+device, separately from the bounded extracted-text payload in private Storage.
+For older attachments, cleared browser data, or another device, Choose original
+file checks that its extracted text matches the saved attachment before editing.
+Original bytes and edited copies are not uploaded by the review/download flow.
+
+Supported: paragraph text replacements across Word runs and whole Excel cell
+value replacements scoped by worksheet and exact match count (50 edits/file).
+Other ZIP parts and cell styles are preserved; replacement text inherits the
+first matching Word run's formatting. This is a change preview, not a full Office
+layout preview. Formatting, structural edits, formulas, protected/signed files,
+active embedded content and Word fields/tracked changes are not supported.
+Workbooks containing formulas are blocked until verified recalculation exists.
+PDF/image editing remains unavailable. All edits are validated locally; model
+output is data, never code. ZIP expansion limits apply before decompression.

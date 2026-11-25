@@ -30,8 +30,13 @@ const elements = [
 const attributes = ["href", "title"];
 let purifier;
 
-export async function renderAnswer(node, text) {
-  const html = marked.parse(text, { async: false });
+export async function renderAnswer(node, text,{files=[]}={}) {
+  const plans=[];
+  const visible=text.replace(/```kahuron-edit\s*\n([\s\S]*?)```/g,(_,json)=>{
+    try{plans.push(JSON.parse(json));return '';}
+    catch{return '\nThe proposed file edit could not be read. Ask the AI to propose it again.\n';}
+  });
+  const html = marked.parse(visible, { async: false });
   if ("setHTML" in Element.prototype) {
     node.setHTML(html, { sanitizer: { elements, attributes } });
   } else {
@@ -47,5 +52,9 @@ export async function renderAnswer(node, text) {
   for (const link of node.querySelectorAll("a")) {
     link.rel = "noopener noreferrer";
     link.target = "_blank";
+  }
+  if(plans.length) {
+    const {appendEditReviews}=await import('./edit-review.js');
+    appendEditReviews(node,plans,files);
   }
 }

@@ -20,7 +20,10 @@ async function transaction(mode,action) {
 }
 export const putFile=(id,blob)=>transaction("readwrite",store=>store.put(blob,id));
 export const getFile=id=>transaction("readonly",store=>store.get(id));
-export const removeFile=id=>transaction("readwrite",store=>store.delete(id));
+export async function removeFile(id,keepOriginal=false) {
+  await transaction("readwrite",store=>store.delete(id));
+  if(!keepOriginal)await transaction("readwrite",store=>store.delete(`${id}:original`));
+}
 
 export async function prepareAttachment(file,signal,onProgress,id=crypto.randomUUID()) {
   const {validateFile,extractFile}=await import("./extract-file.js");
@@ -42,6 +45,11 @@ export async function prepareAttachment(file,signal,onProgress,id=crypto.randomU
   signal.throwIfAborted();
   const attachment={id,name:file.name,mimeType,size:blob.size};
   await putFile(attachment.id,blob);
+  // Originals stay on this device; cloud attachments remain the bounded AI text payload.
+  if(["docx","xlsx"].includes(ext)) {
+    try { await putFile(`${id}:original`,new Blob([file])); }
+    catch(error) {await removeFile(id);throw error;}
+  }
   if(signal.aborted) { await removeFile(attachment.id);signal.throwIfAborted(); }
   return attachment;
 }
