@@ -17,7 +17,13 @@ test("answer copy preserves readable content and excludes file operations and ac
   Object.defineProperty(dom.window.navigator, "clipboard", {
     value: { writeText: async (text) => copied.push(text) },
   });
-  appendAnswerActions(card, answer, { number: 1, title: "Queue guide" });
+  let regenerated=0;
+  appendAnswerActions(card, answer, { number: 1, title: "Queue guide",regenerate:()=>regenerated++ });
+  const regenerate=Array.from(card.querySelectorAll("button")).find(b=>b.textContent==="Regenerate");
+  regenerate.click();regenerate.click();
+  assert.equal(regenerated,1);
+  assert.equal(regenerate.getAttribute("aria-disabled"),"true");
+  assert.equal(regenerate.disabled,false);
   assert.equal(doc.querySelectorAll(".answer-actions").length, 1);
   assert.equal(doc.querySelectorAll(".code-actions").length, 1);
   const text = answerPlainText(answer);

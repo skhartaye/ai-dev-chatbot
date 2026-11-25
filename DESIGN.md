@@ -194,3 +194,7 @@ Claude documents response feedback
 (https://support.claude.com/en/articles/8525154-claude-is-providing-incorrect-or-misleading-responses-what-s-going-on).
 Do not add feedback votes without a real destination or public sharing controls
 that bypass conversation ownership. Answer exports stay local and need no AI call.
+
+## Regenerating an answer
+
+Each completed cloud answer offers Regenerate beside Copy and Save .txt. It queues a new attempt against the original request's prompts, files, and earlier context; it never overwrites an existing answer or duplicates a file. Regenerated answers are labelled with their source answer. One regeneration per original request can be active at a time, with the same queue pacing, ownership checks, retries, and quota limits as ordinary messages. Pending delivery survives reload through the existing outbox.

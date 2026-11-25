@@ -816,14 +816,27 @@ function answerCard(job, index,c) {
     element("strong", "answer-heading", `Kahuron · Answer ${index + 1}`),
     element("span", "job-status", jobLabel(job)),
   );
+  if(job.regenerationOf) item.append(element("span","job-status",`New version of Answer ${c.jobs.findIndex(j=>j.id===job.regenerationOf)+1}`));
   if (job.answer) {
     const answer = element("div", "answer-content", job.answer);
     item.append(answer);
-    void renderAnswer(answer, job.answer,{files:c.prompts.flatMap(p=>p.attachments||[])}).then(()=>appendAnswerActions(item,answer,{number:index+1,title:c.title})).catch(() => {
+    void renderAnswer(answer, job.answer,{files:c.prompts.flatMap(p=>p.attachments||[])}).then(()=>appendAnswerActions(item,answer,{number:index+1,title:c.title,
+      ...(user&&c.remote&&job.status==="complete"?{regenerate:()=>regenerateAnswer(c,job),regenerating:c.jobs.some(j=>j.regenerationOf===(job.regenerationOf||job.id)&&["syncing","queued","processing"].includes(j.status))}:{})
+    })).catch(() => {
       answer.textContent = job.answer;
     });
   } else item.append(element("p", "", jobMessage(job)));
   return item;
+}
+function regenerateAnswer(c,source) {
+  if(staleTab||!user) {announce("Reload your workspace to regenerate.");throw new Error("Workspace unavailable");}
+  const root=source.regenerationOf||source.id;
+  if(c.jobs.some(j=>j.regenerationOf===root&&["syncing","queued","processing"].includes(j.status))) return;
+  const job={id:crypto.randomUUID(),promptIds:[...source.promptIds],regenerationOf:root,createdAt:Date.now(),status:"syncing"};
+  const action={type:"regenerate",conversationId:c.id,title:c.title,job};
+  c.jobs.push(job);outbox.push(action);
+  if(!persist()) {c.jobs.pop();outbox.pop();throw new Error("Could not save request");}
+  render();announce("Regeneration queued. Your original answer is kept.");void flushOutbox();
 }
 function connectionText() {
   $("#connection-status").textContent = user
@@ -894,7 +907,9 @@ async function flushOutbox() {
         for (const attachment of action.prompt.attachments||[]) {
           await uploadAttachment(owner,action.prompt.id,attachment,await getFile(attachment.id));
         }
-      } else
+      } else if(action.type==="regenerate")
+        await rpc("regenerate_answer",{p_id:action.job.id,p_source_id:action.job.regenerationOf});
+      else
         await rpc("compile_prompts", {
           p_id: action.job.id,
           p_conversation_id: action.conversationId,

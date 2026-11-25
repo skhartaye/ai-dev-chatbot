@@ -73,8 +73,9 @@ export async function loadConversation(id) {
     jobs: jobs.map((j) => ({
       id: j.id,
       promptIds: prompts
-        .filter((p) => p.compilation_id === j.id)
+        .filter((p) => p.compilation_id === (j.regeneration_of || j.id))
         .map((p) => p.id),
+      regenerationOf: j.regeneration_of,
       createdAt: Date.parse(j.created_at),
       status: j.status,
       answer: j.answer,

@@ -125,7 +125,7 @@ function copyControl(doc, target, label, context) {
 export function appendAnswerActions(
   card,
   answer,
-  { number, title = "Conversation" } = {},
+  { number, title = "Conversation", regenerate, regenerating = false } = {},
 ) {
   const doc = answer.ownerDocument;
   install(doc);
@@ -171,5 +171,21 @@ export function appendAnswerActions(
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
   row.append(save);
+  if (regenerate) {
+    const retry=doc.createElement("button");
+    retry.type="button";
+    retry.className="answer-action";
+    retry.textContent=regenerating?"Regeneration queued…":"Regenerate";
+    retry.setAttribute("aria-label",`${retry.textContent} answer ${number}`);
+    retry.setAttribute("aria-disabled",String(regenerating));
+    retry.addEventListener("click",()=>{
+      if(retry.getAttribute("aria-disabled")==="true") return;
+      retry.setAttribute("aria-disabled","true");
+      try { regenerate(); } catch {
+        retry.setAttribute("aria-disabled","false");
+      }
+    });
+    row.append(retry);
+  }
   card.append(row);
 }

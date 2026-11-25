@@ -275,3 +275,7 @@ Manual renaming uses `rename_conversation` and sets `title_is_manual`; apply
 Enter/Send queues each request separately while the AI is busy. The Queue view
 shows current/waiting/recent requests; the old batch-combine workflow is removed
 from the normal UI. Legacy unassigned prompts retain a recovery send action.
+
+### Regenerate
+
+Apply migration `202611250008_regenerate.sql` and deploy the updated worker before exposing the new frontend. Regenerate retains every answer and references immutable original input via `compilations.regeneration_of`; client writes use the ownership-checked, idempotent `regenerate_answer` RPC.
