@@ -34,6 +34,7 @@ let cloudGeneration = 0;
 let deliveryError = "";
 let staleTab = false;
 let sessionLoading = false;
+let startingGuest = false;
 const sidebar = $(".sidebar");
 const mobileLayout = matchMedia("(max-width: 860px)");
 
@@ -451,7 +452,8 @@ function savePrompt(send) {
   reveal($("#prompt-list").lastElementChild);
 }
 $("#compile").addEventListener("click", () => queueCompilation());
-function queueCompilation() {
+async function queueCompilation() {
+  if (startingGuest) return;
   if (sessionLoading) return;
   if (staleTab) {
     announce("Reload this tab before compiling.");
@@ -470,11 +472,22 @@ function queueCompilation() {
   if (!user) {
     try {
       sessionStorage.setItem(SEND_INTENT_KEY, JSON.stringify({conversationId:c.id,promptIds:prompts.map(p=>p.id),jobId:crypto.randomUUID()}));
-    } catch { announce("Your prompts are saved here. Sign in, then send them again."); }
-    $("#compilation-dialog").close();
-    $("#sign-in-dialog").showModal();
-    $("#sign-in-feedback").textContent =
-      "Sign in to send these prompts to AI. They are saved here and will be queued after sign-in in this tab.";
+      startingGuest = true;
+      $("#prompt-form").inert = true;
+      $("#connection-note").textContent = "Connecting to AI… Your prompt is saved.";
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error || !data.session) throw error || new Error("No guest session");
+      await setSession(data.session);
+    } catch {
+      const message = "Could not connect to AI. Your prompt is saved. Press Send to retry.";
+      $("#connection-note").textContent = message;
+      $("#prompt-error").textContent = message;
+      $("#prompt-error").hidden = false;
+      announce(message);
+    } finally {
+      startingGuest = false;
+      $("#prompt-form").inert = false;
+    }
     return;
   }
   const job = {
@@ -683,15 +696,12 @@ function connectionText() {
   $("#connection-status").textContent = user
     ? "Cloud workspace"
     : "Local preview";
-  $("#workspace-name").textContent = user
-    ? "Your workspace"
-    : "Local workspace";
-  $("#workspace-status").textContent = user
-    ? "Saved across devices"
-    : "Saved on this device";
+  $("#workspace-name").textContent = user?.is_anonymous ? "Guest workspace" : "Your workspace";
+  $("#workspace-status").textContent = user && !user.is_anonymous ? "Saved across devices" : "Saved in this browser";
+  $("#sign-in").hidden = true;
   $("#sign-in").textContent = user ? "Sign out" : "Sign in";
   $("#connection-note").textContent = !user
-    ? "Sign in to queue prompts and generate AI answers."
+    ? "Send a message to start chatting. No sign-in needed."
     : deliveryError ||
       (outbox.length
         ? "Syncing saved prompts… Keep this tab open."

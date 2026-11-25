@@ -5,11 +5,11 @@ import { runInContext } from 'node:vm';
 import { build } from 'esbuild';
 import { JSDOM } from 'jsdom';
 
-test('Enter preserves a signed-out send and resumes its exact batch after sign-in', async () => {
+for (const fails of [false, true]) test(`Guest send ${fails ? 'preserves prompts on connection failure' : 'queues its exact batch without email sign-in'}`, async () => {
   const result = await build({entryPoints:['public/app.js'],bundle:true,write:false,format:'iife',plugins:[{
     name:'fake-cloud',setup(b){b.onResolve({filter:/\/cloud\.js$/},()=>({path:'cloud',namespace:'fake'}));b.onLoad({filter:/.*/,namespace:'fake'},()=>({contents:`
       window.calls=[];
-      export const supabase={auth:{onAuthStateChange(cb){window.signIn=()=>cb('SIGNED_IN',{user:{id:'owner'}})},signOut:async()=>({}),signInWithOtp:async()=>({})}};
+      export const supabase={auth:{onAuthStateChange(){},signInAnonymously:async()=>${fails ? "({data:{session:null},error:new Error('Unavailable')})" : "({data:{session:{user:{id:'owner',is_anonymous:true}}},error:null})"},signOut:async()=>({}),signInWithOtp:async()=>({})}};
       export const rpc=async(name,args)=>{window.calls.push({name,args});return []};
       export const listConversations=async()=>[];
       export const loadConversation=async()=>({prompts:[],jobs:[]});
@@ -34,13 +34,20 @@ test('Enter preserves a signed-out send and resumes its exact batch after sign-i
     enter({});
     const intent=JSON.parse(w.sessionStorage.getItem('kahuron.send-after-sign-in'));
     assert.equal(intent.promptIds.length,1);
-    assert.equal(w.document.querySelector('#sign-in-dialog').open,true);
-    w.signIn();
+    assert.equal(w.document.querySelector('#sign-in-dialog').open,false);
     await new Promise(resolve=>setTimeout(resolve,100));
     const compile=w.calls.filter(c=>c.name==='compile_prompts');
-    assert.equal(compile.length,1);
-    assert.deepEqual(Array.from(compile[0].args.p_prompt_ids),Array.from(intent.promptIds));
     assert.equal(w.document.querySelector('#prompt-form').inert,false);
-    assert.equal(w.sessionStorage.getItem('kahuron.send-after-sign-in'),null);
+    if (fails) {
+      assert.equal(compile.length,0);
+      assert.equal(JSON.parse(w.sessionStorage.getItem('kahuron.send-after-sign-in')).jobId,intent.jobId);
+      assert.match(w.document.querySelector('#prompt-error').textContent,/Press Send to retry/);
+      assert.match(w.localStorage.getItem('kahuron.preview.v1'),/Answer this saved prompt/);
+    } else {
+      assert.equal(compile.length,1);
+      assert.deepEqual(Array.from(compile[0].args.p_prompt_ids),Array.from(intent.promptIds));
+      assert.equal(w.sessionStorage.getItem('kahuron.send-after-sign-in'),null);
+      assert.equal(w.document.querySelector('#workspace-name').textContent,'Guest workspace');
+    }
   } finally {dom.window.close();}
 });
