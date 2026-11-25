@@ -257,3 +257,14 @@ No extra OCR API, account or provider charge is introduced.
 
 Use [DESIGN.md](DESIGN.md) before changing UI. Semantic tokens live in
 `public/styles.css`; attachments and review components reuse those tokens.
+
+
+## Automatic conversation titles
+
+The answer response includes a short semantic topic title (normally 3–7 words,
+max 60 characters). The worker saves it to `conversations.title` in the same
+transaction as a valid answer completion. No extra provider call is needed.
+New chats use a neutral placeholder until completion; legacy chats update on their
+next completed answer. Invalid labels never get clipped or block a valid answer.
+Apply `202611250006_conversation_titles.sql` before deploying this worker; the
+five-argument completion RPC remains available for rolling deployments.

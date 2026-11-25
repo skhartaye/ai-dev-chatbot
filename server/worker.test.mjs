@@ -91,7 +91,7 @@ test("worker accepts one lease, preserves ordered prompts, and stores a complete
     generate: async (input) => {
       assert.deepEqual(input, ["CURRENT USER MESSAGE:\nfirst", "CURRENT USER MESSAGE:\nsecond"]);
       await gate;
-      return { text: "answer", model: "test", usage: null };
+      return { text: "answer", title:"Reliable AI prompt queue", model: "test", usage: null };
     },
   });
   const first = worker.tick();
@@ -108,6 +108,7 @@ test("worker accepts one lease, preserves ordered prompts, and stores a complete
       p_answer: "answer",
       p_model: "test",
       p_usage: null,
+      p_title: "Reliable AI prompt queue",
     },
   ]);
 });

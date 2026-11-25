@@ -540,14 +540,13 @@ function savePrompt(send) {
       title:
         c.remote || c.prompts.length
           ? c.title
-          : Array.from(text).slice(0, 48).join(""),
+          : c.title,
       prompt,
     });
   c.prompts.push(prompt);
   c.draft = "";
   c.draftAttachments = [];
-  if (c.prompts.length === 1 && !c.remote)
-    c.title = Array.from(text).slice(0, 48).join("");
+
   clearTimeout(saveTimer);
   const saved = persist();
   if (!saved) {

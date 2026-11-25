@@ -143,3 +143,17 @@ Show the complete title on hover/keyboard focus; tapping opens its full heading.
 Do not shorten the saved title as a styling fix. The current row uses a paper
 surface and green leading edge. Preserve history scroll position and link focus
 when sync rerenders the list. Keep scrollbar padding outside each row.
+
+
+### Automatic title rules
+
+Titles summarize the user's main goal as a complete topic phrase, usually 3–7
+words and at most 60 characters. They are generated with the answer, not by
+clipping the first message. Follow-ups such as "yes, do it" inherit the established
+topic. Prefer the user's language; avoid greetings, generic labels, personal
+identifiers and reference numbers. Invalid titles are skipped rather than sliced.
+`conversations.title` remains the source of truth. The server saves a valid title
+atomically with a leased completion; no additional title API call is made.
+New chats retain "New conversation" until their first completed answer. Older
+chats acquire semantic titles on their next completed answer; do not spend extra
+provider calls to rename inactive history automatically.

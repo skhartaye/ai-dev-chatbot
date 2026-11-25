@@ -12,7 +12,7 @@ test('Gemini receives actual PDF/image bytes and converted Office text alongside
     assert.deepEqual(parts[1],{inlineData:{mimeType:'application/pdf',data:'JVBERi0='}});
     assert.equal(parts[3].text,'Item\tAmount\nMango\t450');
     assert.equal(parts.at(-1).text,'What is shown?');
-    return Response.json({candidates:[{finishReason:'STOP',content:{parts:[{text:'Answer'}]}}]});
+    return Response.json({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({answer:'Answer',title:'Attached document review'})}]}}]});
   }});
 });
 test('attachment retrieval restricts conversation and completed/current batches, validates payloads',async()=>{

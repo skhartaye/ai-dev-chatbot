@@ -95,6 +95,7 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
           p_answer: answer.text,
           p_model: answer.model,
           p_usage: answer.usage,
+          p_title: answer.title??null,
         });
       } catch (error) {
         const plan = retryPlan(error, job.attempts);

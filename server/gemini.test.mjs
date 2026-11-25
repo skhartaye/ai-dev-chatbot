@@ -17,12 +17,13 @@ test("preserves prompt order and returns completed answer", async () => {
       ]);
       return Response.json({
         candidates: [
-          { finishReason: "STOP", content: { parts: [{ text: "Answer" }] } },
+          { finishReason: "STOP", content: { parts: [{ text: JSON.stringify({answer:"Answer",title:"Reliable prompt queue"}) }] } },
         ],
       });
     },
   });
   assert.equal(result.text, "Answer");
+  assert.equal(result.title,"Reliable prompt queue");
 });
 
 test("returns throttling to the worker without retrying or switching models", async () => {
@@ -77,7 +78,7 @@ test("an availability failure uses exactly one approved backup and records the a
             candidates: [
               {
                 finishReason: "STOP",
-                content: { parts: [{ text: "Backup answer" }] },
+                content: { parts: [{ text: JSON.stringify({answer:"Backup answer",title:"Reliable prompt queue"}) }] },
               },
             ],
           });
