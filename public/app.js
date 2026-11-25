@@ -211,6 +211,8 @@ function makeConversation(focus = true) {
 }
 function renderNav() {
   const nav = $("#conversation-nav");
+  const previousScroll=nav.scrollTop;
+  const focusedHref=nav.contains(document.activeElement)?document.activeElement.getAttribute("href"):null;
   nav.replaceChildren();
   const query = $("#search").value.trim().toLocaleLowerCase();
   const matches = state.conversations.filter((c) =>
@@ -220,7 +222,21 @@ function renderNav() {
   for (const c of matches) {
     const url = new URL(location.href);
     url.searchParams.set("conversation", c.id);
-    const link = element("a", "conversation-link", c.title);
+    const link = element("a", "conversation-link");
+    link.setAttribute("aria-label",c.title);
+    link.title=c.title;
+    const icon=element("span","conversation-icon");
+    icon.setAttribute("aria-hidden","true");
+    const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("viewBox","0 0 24 24");svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");svg.setAttribute("stroke-width","1.6");
+    const path=document.createElementNS("http://www.w3.org/2000/svg","path");path.setAttribute("d","M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z");svg.append(path);icon.append(svg);
+    const copy=element("span","conversation-copy");
+    copy.append(element("span","conversation-name",c.title));
+    if(Number.isFinite(c.createdAt)){
+      const date=element("time","conversation-date",new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(c.createdAt));
+      date.dateTime=new Date(c.createdAt).toISOString();date.setAttribute("aria-hidden","true");copy.append(date);
+    }
+    link.append(icon,copy);
     link.href = url.pathname + url.search;
     if (c.id === current()?.id) link.setAttribute("aria-current", "page");
     link.addEventListener("click", (event) => {
@@ -233,6 +249,8 @@ function renderNav() {
   }
   if (!matches.length)
     nav.append(element("p", "sidebar-empty", "No matching conversations."));
+  nav.scrollTop=previousScroll;
+  if(focusedHref)Array.from(nav.querySelectorAll("a")).find(a=>a.getAttribute("href")===focusedHref)?.focus({preventScroll:true});
 }
 function render() {
   const c = current();

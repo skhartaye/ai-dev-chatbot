@@ -133,3 +133,13 @@ At 400px available height or less while typing, hide the pending-file strip;
 files remain available through the header's Files count/button. Restore the strip
 when space returns. Do not let its min-content width widen the conversation grid:
 use an explicit `minmax(0,1fr)` column and zero minimum width on composer wrappers.
+
+
+### Conversation list rows
+
+Use a small decorative conversation icon, a two-line title and a quiet creation
+date from `createdAt`. Keep the whole saved title in the DOM and accessible name.
+Show the complete title on hover/keyboard focus; tapping opens its full heading.
+Do not shorten the saved title as a styling fix. The current row uses a paper
+surface and green leading edge. Preserve history scroll position and link focus
+when sync rerenders the list. Keep scrollbar padding outside each row.

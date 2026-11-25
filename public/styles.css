@@ -1825,3 +1825,86 @@ dialog > .text-button {
     display: none;
   }
 }
+
+/* Conversation rows: stable title rhythm, a quiet timestamp and a clear current item. */
+.sidebar .conversation-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-block-size: 72px;
+  padding: 12px 10px;
+  margin-block-end: 6px;
+  border-radius: 14px;
+  background: #ffffff30;
+  border: 1px solid transparent;
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: normal;
+}
+.conversation-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 26px;
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: 8px;
+  background: #ffffff60;
+  color: var(--muted);
+  margin-block-start: 1px;
+}
+.conversation-icon svg {
+  inline-size: 16px;
+  block-size: 16px;
+}
+.conversation-copy {
+  display: grid;
+  gap: 5px;
+  min-inline-size: 0;
+  flex: 1;
+}
+.conversation-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: clip;
+  overflow-wrap: anywhere;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.conversation-date {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.sidebar .conversation-link[aria-current="page"] {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  box-shadow:
+    inset 3px 0 var(--accent),
+    var(--shadow-card);
+}
+.conversation-link[aria-current="page"] .conversation-icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.conversation-link[aria-current="page"] .conversation-name {
+  font-weight: 750;
+}
+.conversation-link:focus-visible .conversation-name {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sidebar .conversation-link:hover {
+    background: var(--surface-soft);
+    border-color: var(--line);
+  }
+  .conversation-link:hover .conversation-name {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+  }
+}
