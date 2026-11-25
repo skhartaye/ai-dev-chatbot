@@ -1,6 +1,7 @@
-import { PDFDocument, PDFName, PDFDict, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFName, PDFDict, rgb } from "pdf-lib";
 import { validateVisualPlan } from "./media-edit-plan.js";
 import { findOcrMatches, clearOcrPixels } from "./ocr-text-region.js";
+import { matchScanFont } from "./scan-font-match.js";
 const encode = (canvas) =>
   new Promise((resolve, reject) =>
     canvas.toBlob(
@@ -22,6 +23,7 @@ export async function editScannedPdf(
     encodeCanvas = encode,
     createOcrWorker,
     pdfjsModule,
+    fontDataUrl,
   } = {},
 ) {
   validateVisualPlan(plan, [{ id: plan.fileId, name: plan.name }]);
@@ -113,7 +115,7 @@ export async function editScannedPdf(
       wasmUrl: "/extraction-assets/pdf-wasm/",
     });
     const pdf = await loading.promise,
-      font = await doc.embedFont(StandardFonts.Helvetica),
+      fonts = new Map(),
       log = [];
     onProgress("Loading the on-device OCR engine…");
     const create =
@@ -183,6 +185,16 @@ export async function editScannedPdf(
             throw new Error(
               "The OCR proposal edits overlapping text. Request each phrase once.",
             );
+          onProgress(`Matching the scanned font on page ${number}…`);
+          const matched = await matchScanFont(ctx, match, {
+            pdfjs,
+            canvasFactory,
+            signal: controller.signal,
+            fontDataUrl,
+          });
+          if (!fonts.has(matched.name))
+            fonts.set(matched.name, await doc.embedFont(matched.name));
+          const font = fonts.get(matched.name);
           clearOcrPixels(ctx, match, canvas.width, canvas.height);
           if (
             Array.from(change.replace).some(
@@ -193,19 +205,29 @@ export async function editScannedPdf(
               "The OCR replacement font supports Latin characters only. Use supported text.",
             );
           const b = match.box,
-            maxHeight = (b.y1 - b.y0) / scale,
             size = Math.min(
-              maxHeight / 0.9,
+              matched.sizePixels / scale,
               (b.x1 - b.x0) / scale / font.widthOfTextAtSize(change.replace, 1),
             );
-          if (!Number.isFinite(size) || size < 6 || size < maxHeight * 0.65)
+          if (
+            !Number.isFinite(size) ||
+            size < 6 ||
+            size < (matched.sizePixels / scale) * 0.85
+          )
             throw new Error(
               "The new text is too long for the scanned region. Shorten the replacement.",
             );
-          replacements.push({ box: b, text: change.replace, size });
+          replacements.push({
+            box: b,
+            text: change.replace,
+            size,
+            font,
+            baseline: matched.baseline,
+          });
           log.push({
             location: `Scanned page ${number}`,
             description: `OCR: “${change.find}” → “${change.replace}”.`,
+            formatLabel: `Approximate match: ${matched.label} · ${size.toFixed(1)} pt`,
           });
         }
       onProgress(`Preparing edited page ${number}…`);
@@ -226,9 +248,9 @@ export async function editScannedPdf(
       for (const r of replacements)
         edited.drawText(r.text, {
           x: r.box.x0 / scale,
-          y: edited.getHeight() - r.box.y1 / scale,
+          y: edited.getHeight() - r.baseline / scale,
           size: r.size,
-          font,
+          font: r.font,
           color: rgb(0, 0, 0),
         });
       canvas.width = canvas.height = 0;
@@ -247,7 +269,7 @@ export async function editScannedPdf(
       previewPages: [pageNumbers[0], pageNumbers[0]],
       notes: [
         "OCR matched printed English text. Check every replacement in the preview.",
-        "Edited pages are rebuilt as scans with selectable replacement text in Helvetica; other content on those pages stays an image. Original fonts and exact scan texture are not preserved.",
+        "Edited pages are rebuilt as scans with selectable replacement text in the closest measured standard font; other content on those pages stays an image. Font matching is approximate; custom fonts and exact scan texture are not preserved.",
         "The original is unchanged. This is not secure redaction.",
       ],
     };

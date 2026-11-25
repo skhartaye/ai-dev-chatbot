@@ -60,6 +60,7 @@ test("real OCR locates scanned text, changes visible pixels and exports selectab
     canvasFactory: createCanvas,
     encodeCanvas: async (c) => new Blob([c.toBuffer("image/png")]),
     pdfjsModule: pdfjs,
+    fontDataUrl: resolve("node_modules/pdfjs-dist/standard_fonts") + "/",
     createOcrWorker: async () => {
       calls++;
       return createWorker("eng", 1, {
@@ -141,6 +142,7 @@ test("closing an OCR edit rejects pending recognition and terminates its worker"
       {
         signal: controller.signal,
         pdfjsModule: pdfjs,
+        fontDataUrl: resolve("node_modules/pdfjs-dist/standard_fonts") + "/",
         canvasFactory: createCanvas,
         encodeCanvas: async (c) => new Blob([c.toBuffer("image/png")]),
         createOcrWorker: async () => ({

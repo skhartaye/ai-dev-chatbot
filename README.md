@@ -236,7 +236,11 @@ the review integration test verifies preview gating and cleanup.
 Ask to replace exact printed words in a scanned PDF. Review edits runs self-hosted,
 on-device English Tesseract OCR, checks confidence (85+), exact occurrence counts,
 background and nearby words, then replaces those pixels and adds selectable black
-Helvetica text. Originals stay untouched; download appears after both previews
+text in the closest measured standard PDF font. The browser compares source-letter
+shapes against 12 serif/sans/monospace regular, bold and italic candidates using
+the same PDF renderer as the review. It estimates size and baseline from the scan;
+the review labels the approximate match. Long replacements are rejected instead
+of shrinking more than 15%. Originals stay untouched; download appears after both previews
 render. Closing the review cancels processing; a two-minute deadline prevents
 unbounded OCR work. Up to 10 phrases on 3 pages, 50-page/10 MB source/output caps,
 rendering bounded to 4 megapixels per page. OCR assets load only for this operation.
@@ -245,5 +249,5 @@ Clear horizontal black print on white is supported. Handwriting, uncertain match
 coloured/busy backgrounds, annotations/links on edited pages, forms, signed/active
 or encrypted PDFs are rejected. Edited pages are rasterized at up to 200 DPI;
 existing text layers/interactivity on those pages are discarded. Other pages are
-preserved. Font matching, paragraph reflow and secure redaction are not supported.
+preserved. Exact custom-font matching, paragraph reflow and secure redaction are not supported.
 No extra OCR API, account or provider charge is introduced.
