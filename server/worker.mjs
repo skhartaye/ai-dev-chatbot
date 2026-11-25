@@ -79,7 +79,7 @@ export function createWorker(db, { generate = generateAvailableAnswer } = {}) {
               `Previous completed answers for context (new prompts below take priority):\n${history.map((j) => j.answer).join("\n\n")}`,
             ]
           : [];
-        const input = [...context, ...prompts.map((p) => p.content)];
+        const input = [...context, ...prompts.map((p) => `CURRENT USER MESSAGE:\n${p.content}`)];
         const attachments=await loadAttachments(db,job.conversation_id,[job.id,...(history||[]).map(j=>j.id)]);
         if (input.reduce((size, text) => size + text.length, 0) + attachments.reduce((n,a)=>n+(a.text?.length||0),0) > 200000) {
           const error = new Error(

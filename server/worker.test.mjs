@@ -89,7 +89,7 @@ test("worker accepts one lease, preserves ordered prompts, and stores a complete
   };
   const worker = createWorker(db, {
     generate: async (input) => {
-      assert.deepEqual(input, ["first", "second"]);
+      assert.deepEqual(input, ["CURRENT USER MESSAGE:\nfirst", "CURRENT USER MESSAGE:\nsecond"]);
       await gate;
       return { text: "answer", model: "test", usage: null };
     },

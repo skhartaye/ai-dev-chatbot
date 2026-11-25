@@ -50,6 +50,7 @@ const server = createServer(async (request, response) => {
       JSON.stringify({
         status: "ok",
         queue: configured ? "ready" : "not_configured",
+        revision: process.env.RENDER_GIT_COMMIT?.slice(0,7),
       }),
     );
     return;
