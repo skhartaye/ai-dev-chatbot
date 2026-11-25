@@ -299,3 +299,7 @@ New links verify with `verifyOtp({token_hash,type})`, then establish the returne
 ## Settings and recorded usage
 
 Settings displays the verified account email, guest-to-email saving or local sign-out, data handling, and the last 30 days of recorded request and token usage. Usage is derived from owner-scoped `compilations` rows through existing RLS and is paginated; no counters or separate usage table are written. Only stored successful provider reports are counted. Missing reports and unrecorded failed-attempt usage are disclosed; no remaining quota or cost is invented.
+
+### Daily provider quota
+
+The authenticated POST `/quota` endpoint reads the confirmed Gemini project's free-tier daily request usage and limit from Google Cloud Monitoring. Settings shows requests left, percent remaining and the Pacific-midnight reset, separately from per-account 30-day token activity. A dedicated `kahuron-quota-reader` service account has Monitoring Viewer only. Configure its JSON as Render secret file `kahuron-quota-reader.json`; do not commit it or expose it through browser code. No billing or paid plan was enabled for this setup. Provider reports can lag; RPM and TPM limits remain independent. Missing/stale data shows unavailable.

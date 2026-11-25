@@ -2,6 +2,7 @@ import { initSettings, initAccountSettings } from "./settings.js";
 import {appendAnswerActions} from "./answer-actions.js";
 import {requestEmailLink,verifyEmailCode,verifyEmailReturn,emailError} from "./email-auth.js";
 import {summarizeUsage} from "./usage.js";
+import {loadProviderQuota,renderProviderQuota} from './provider-quota.js';
 import {requestQueue} from "./request-queue.js";
 import {createChatScroll} from "./chat-scroll.js";
 import { reveal } from "./motion.js";
@@ -987,6 +988,7 @@ async function refreshUsage() {
   const generation=cloudGeneration,button=$("#refresh-usage"),feedback=$("#usage-feedback"),summary=$("#usage-summary");
   if(button.disabled)return;
   if(!user){feedback.textContent='No recorded usage.';summary.hidden=true;return;}
+  const quotaRequest = refreshProviderQuota(generation);
   button.disabled=true;feedback.textContent='Loading usage…';summary.hidden=true;
   try{
     const usage=summarizeUsage(await loadUsage());if(generation!==cloudGeneration)return;
@@ -1000,7 +1002,17 @@ async function refreshUsage() {
     if(usage.models.size)summary.append(element('p','settings-note',`Models used: ${Array.from(usage.models.keys()).join(', ')}`));
     feedback.textContent=usage.requests?'':'No requests in the last 30 days.';summary.hidden=false;
   }catch{if(generation===cloudGeneration)feedback.textContent='Could not load usage. Reconnect and select Refresh.';}
-  finally{button.disabled=false;}
+  finally{await quotaRequest;button.disabled=false;}
+}
+async function refreshProviderQuota(generation) {
+  const container = $('#provider-quota');
+  renderProviderQuota(container, {status:'loading'});
+  try {
+    const report = await loadProviderQuota(supabase);
+    if (generation === cloudGeneration) renderProviderQuota(container, report);
+  } catch {
+    if (generation === cloudGeneration) renderProviderQuota(container, {status:'unavailable'});
+  }
 }
 function mergeOutbox() {
   for (const action of outbox) {

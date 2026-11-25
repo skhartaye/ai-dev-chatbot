@@ -1947,6 +1947,13 @@ dialog > .text-button {
 .settings-tabs button[aria-selected="true"] { color:var(--ink); }
 .settings-tabs button[aria-selected="true"]::after { content:"";position:absolute;inset:auto 0 0;border-block-end:3px solid var(--accent); }
 .settings-control,.quota-status { display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px;border-block-end:1px solid var(--line);font-size:.875rem; }
+.quota-status { display:block;background:var(--accent-soft);border:1px solid var(--line);border-radius:14px;padding:20px; }
+.quota-status > span { display:block;margin-block-end:8px; }
+#settings-dialog .quota-status h3 { margin:0 0 12px;font-size:.8125rem;font-weight:500; }
+.quota-status .quota-remaining { display:block;font-size:1.9rem;letter-spacing:-.04em;font-variant-numeric:tabular-nums; }
+.quota-status meter { display:block;inline-size:100%;block-size:14px;margin-block:12px;accent-color:var(--accent); }
+#settings-dialog .quota-status .quota-note { font-size:.75rem;line-height:1.6;margin-block-end:0; }
+#settings-dialog .usage-activity-title { font-size:.8125rem;margin:24px 0 0; }
 .settings-control select { font:inherit;max-inline-size:55%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink); }
 .settings-scope { float:inline-end;color:var(--muted);font-size:.75rem;font-weight:400; }
 .settings-info { margin-block-start:24px;padding-block-start:20px;border-block-start:1px solid var(--line); }
@@ -1973,10 +1980,9 @@ dialog > .text-button {
 .settings-section-header h2 span { display:block;font-size:.75rem;color:var(--muted);font-weight:400;margin-block-start:5px; }
 .settings-section-header button { font-size:.75rem; }
 .usage-metrics { display:grid;grid-template-columns:1fr 1fr;gap:20px 24px;margin:18px 0; }
-.usage-metrics div:first-child { grid-column:1/-1;background:var(--accent-soft);border:1px solid var(--line);border-radius:14px;padding:18px; }
+.usage-metrics div { min-inline-size:0; }
 .usage-metrics dt { font-size:.75rem;color:var(--muted); }
 .usage-metrics dd { margin:6px 0 0;font-size:1.25rem;font-weight:750;font-variant-numeric:tabular-nums; }
-.usage-metrics div:first-child dd { font-size:2rem;letter-spacing:-.04em; }
 .account-row strong { overflow-wrap:anywhere; }
 #rename-dialog {
   padding: 28px;

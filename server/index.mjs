@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { createClient } from "@supabase/supabase-js";
 import { createWorker } from "./worker.mjs";
+import { createQuotaReader } from './provider-quota.mjs';
 
 const configured = Boolean(
   process.env.SUPABASE_URL &&
@@ -21,6 +22,7 @@ const db = configured
     )
   : null;
 const worker = db ? createWorker(db) : null;
+const readQuota = createQuotaReader();
 const origins = new Set([
   "https://kahuron.netlify.app",
   ...(process.env.NODE_ENV === "development" ? ["http://127.0.0.1:4173"] : []),
@@ -55,7 +57,7 @@ const server = createServer(async (request, response) => {
     );
     return;
   }
-  if (request.method === "POST" && request.url === "/wake") {
+  if (request.method === "POST" && ['/wake','/quota'].includes(request.url)) {
     if (!db) {
       response.writeHead(503);
       response.end(JSON.stringify({ error: "Queue is not configured yet." }));
@@ -77,6 +79,11 @@ const server = createServer(async (request, response) => {
       if (error || !data.user) {
         response.writeHead(401);
         response.end("{}");
+        return;
+      }
+      if (request.url === '/quota') {
+        response.writeHead(200);
+        response.end(JSON.stringify(await readQuota()));
         return;
       }
       void worker.tick();
