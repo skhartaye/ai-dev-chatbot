@@ -112,7 +112,7 @@ export function initAccountSettings(doc, { getUser, saveInstructions, exportAcco
         if (getUser()?.id === currentOwner && !task.signal.aborted) exportFeedback.textContent = message;
       });
       if (getUser()?.id === currentOwner && !task.signal.aborted)
-        exportFeedback.textContent = `Export downloaded · ${result.conversations} chats${result.missingOriginals ? ` · ${result.missingOriginals} Office originals unavailable on this browser (listed in archive)` : ''}.`;
+        exportFeedback.textContent = `Export downloaded · ${result.conversations} ${result.conversations === 1 ? 'chat' : 'chats'}${result.missingOriginals ? ` · ${result.missingOriginals} Office originals unavailable on this browser (listed in archive)` : ''}.`;
     } catch (e) {
       if (getUser()?.id === currentOwner) exportFeedback.textContent = task.signal.aborted ? 'Export cancelled.' : e.message || 'Export failed. Reconnect and try again.';
     } finally {
