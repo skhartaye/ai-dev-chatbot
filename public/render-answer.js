@@ -50,6 +50,7 @@ export async function renderAnswer(node, text,{files=[]}={}) {
     });
   }
   for (const link of node.querySelectorAll("a")) {
+    if(!/^https?:\/\//i.test(link.getAttribute('href')||'')){link.replaceWith(document.createTextNode(link.textContent));continue;}
     link.rel = "noopener noreferrer";
     link.target = "_blank";
   }
