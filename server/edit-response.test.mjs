@@ -34,14 +34,14 @@ test("Office answers request a schema and create review proposals instead of AI 
                       {
                         fileId: "owned-file",
                         name: "untrusted.xlsx",
-                        changes: [
+                        changesJson: JSON.stringify([
                           {
                             sheet: "Orders",
                             cell: "B2",
                             expected: 3,
                             replace: 7,
                           },
-                        ],
+                        ]),
                       },
                     ],
                   }),
@@ -67,7 +67,9 @@ test("structured responses reject unknown file IDs and malformed output, while r
       encodeEditResponse(
         JSON.stringify({
           answer: "x",
-          edits: [{ fileId: "someone-elses-file", changes: [{}] }],
+          edits: [
+            { fileId: "someone-elses-file", changesJson: JSON.stringify([{}]) },
+          ],
         }),
         files,
       ),

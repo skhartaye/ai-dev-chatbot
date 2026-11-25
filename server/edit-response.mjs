@@ -1,5 +1,5 @@
-const scalar = { type: ["string", "number", "boolean", "null"] };
 export function editResponseSchema(files) {
+  // Keep the provider grammar shallow; local validation owns the richer edit schema.
   return {
     type: "object",
     required: ["answer", "edits"],
@@ -7,45 +7,15 @@ export function editResponseSchema(files) {
       answer: { type: "string" },
       edits: {
         type: "array",
-        maxItems: 3,
         items: {
           type: "object",
-          required: ["fileId", "changes"],
+          required: ["fileId", "changesJson"],
           properties: {
             fileId: { type: "string", enum: files.map((f) => f.id) },
-            changes: {
-              type: "array",
-              minItems: 1,
-              maxItems: 50,
-              items: {
-                type: "object",
-                properties: {
-                  find: { type: ["string", "number", "boolean"] },
-                  count: { type: "integer" },
-                  replace: scalar,
-                  sheet: { type: "string" },
-                  cell: { type: "string" },
-                  range: { type: "string" },
-                  expected: scalar,
-                  formula: { type: "string" },
-                  format: {
-                    type: "object",
-                    properties: {
-                      bold: { type: "boolean" },
-                      italic: { type: "boolean" },
-                      underline: { type: "boolean" },
-                      fontSize: { type: "number" },
-                      fontFamily: { type: "string" },
-                      color: { type: "string" },
-                      fill: { type: "string" },
-                      alignment: { type: "string" },
-                      horizontal: { type: "string" },
-                      wrapText: { type: "boolean" },
-                      numberFormat: { type: "string" },
-                    },
-                  },
-                },
-              },
+            changesJson: {
+              type: "string",
+              description:
+                "JSON-encoded array of edit operation objects, following FILE EDITING instructions.",
             },
           },
         },
@@ -68,14 +38,20 @@ export function encodeEditResponse(text, files) {
     throw new Error("The AI returned an invalid structured answer.");
   const plans = result.edits.map((edit) => {
     const file = files.find((f) => f.id === edit.fileId);
+    let changes;
+    try {
+      changes = JSON.parse(edit.changesJson);
+    } catch {
+      throw new Error("The AI returned invalid edit operations.");
+    }
     if (
       !file ||
-      !Array.isArray(edit.changes) ||
-      !edit.changes.length ||
-      edit.changes.length > 50
+      !Array.isArray(changes) ||
+      !changes.length ||
+      changes.length > 50
     )
       throw new Error("The AI returned an invalid file edit proposal.");
-    return { fileId: file.id, name: file.name, changes: edit.changes };
+    return { fileId: file.id, name: file.name, changes };
   });
   const answer = plans.length
     ? "Proposed changes are ready to review. Your original files are unchanged."
