@@ -1703,5 +1703,125 @@ dialog > .text-button {
   }
 }
 
-.message-area{overflow-anchor:none}
-.message-area:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.message-area {
+  overflow-anchor: none;
+}
+.message-area:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+/* The visible app height can shrink without the layout viewport changing (iOS keyboard). */
+.main {
+  container: workspace / size;
+}
+@container workspace (max-height:560px) {
+  .topbar {
+    min-block-size: 52px;
+    padding-block: max(4px, env(safe-area-inset-top, 0px)) 4px;
+  }
+  .composer-wrap {
+    padding-block: 6px max(8px, env(safe-area-inset-bottom, 0px));
+  }
+  .composer {
+    padding: 10px 12px;
+  }
+  .composer textarea {
+    block-size: 48px;
+    max-block-size: 80px;
+  }
+  .composer-footer {
+    margin-block-start: 6px;
+  }
+  .local-note {
+    font-size: 0.75rem;
+    margin-block-start: 4px;
+  }
+  .empty-state {
+    padding-block: 6px;
+  }
+  .empty-state h2 {
+    font-size: 1.5rem;
+  }
+  .empty-state > p {
+    font-size: 0.8125rem;
+    margin-block: 8px;
+  }
+  .starters {
+    display: none;
+  }
+  .conversation.is-empty:has(#prompt:focus) .empty-state {
+    display: none;
+  }
+  .conversation:has(#prompt:focus) {
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .conversation:has(#prompt:focus) .conversation-header {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    overflow: clip;
+    clip-path: inset(50%);
+  }
+}
+@media (max-width: 860px) {
+  .topbar {
+    padding-inline: max(10px, env(safe-area-inset-left, 0px))
+      max(10px, env(safe-area-inset-right, 0px));
+  }
+  .composer-wrap {
+    padding-inline: max(12px, env(safe-area-inset-left, 0px))
+      max(12px, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* A horizontal file row must not become the grid's minimum content width. */
+.conversation {
+  grid-template-columns: minmax(0, 1fr);
+}
+.composer-wrap,
+#prompt-form,
+.composer {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+@container workspace (max-height:560px) {
+  .main .attachment-tray {
+    margin-block-end: 8px;
+    padding-block-end: 8px;
+  }
+  .main .tray-heading {
+    display: none;
+  }
+  .main .draft-attachments .file-card-open {
+    min-block-size: 64px;
+    padding-block: 6px;
+  }
+  .main .draft-attachments .file-visual {
+    inline-size: 36px;
+    block-size: 44px;
+  }
+  .main .draft-attachments .file-paper {
+    inline-size: 28px;
+    block-size: 38px;
+  }
+  #file-status {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: 0;
+    overflow: clip;
+    clip-path: inset(50%);
+  }
+  .file-feedback:has(#file-errors[hidden]) {
+    border: 0;
+    padding: 0;
+  }
+}
+
+@container workspace (max-height:400px) {
+  .conversation:has(#prompt:focus) .attachment-tray {
+    display: none;
+  }
+}

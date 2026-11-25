@@ -116,3 +116,20 @@ Verify desktop, 390px mobile, short viewport/keyboard, keyboard focus, reduced
 motion and contrast preferences. Confirm no outer-page overflow, composer remains
 reachable, syncing does not move a reader's position, and review header/footer
 stay reachable while the body scrolls. Save representative screenshots.
+
+
+### Keyboard-visible layout
+
+The main workspace is a size query container. Compact styles respond to its actual
+height below 560px, including when only the Visual Viewport shrinks. Do not rely
+on viewport-height media queries alone for mobile keyboards. Keep the 48px input,
+44px Send action, attachment disclosure and safe-area padding. While typing in a
+compact workspace, visually hide the conversation heading and collapse pending
+file cards so the chat still has room. Keep the composer outside the chat scroller.
+Desktop responsive emulation checks geometry but does not prove real iOS/Android
+keyboard behavior; distinguish those checks from physical-device validation.
+
+At 400px available height or less while typing, hide the pending-file strip;
+files remain available through the header's Files count/button. Restore the strip
+when space returns. Do not let its min-content width widen the conversation grid:
+use an explicit `minmax(0,1fr)` column and zero minimum width on composer wrappers.
