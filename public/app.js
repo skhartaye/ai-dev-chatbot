@@ -708,7 +708,7 @@ $("#sign-in").addEventListener("click", () => {
       announce("Wait for pending work to sync before signing out.");
       return;
     }
-    void supabase.auth.signOut().then(({ error }) => {
+    void supabase.auth.signOut({scope:'local'}).then(({ error }) => {
       if (error) announce("Could not sign out. Please try again.");
     });
   } else openEmailDialog(user?.is_anonymous?'save':'signin');
@@ -1037,7 +1037,7 @@ async function setSession(session) {
     const upgraded=user?.is_anonymous&&!next?.is_anonymous;
     user=next;connectionText();
     if(upgraded){$("#sign-in-dialog").close();announce('Email confirmed. Your workspace is saved to your account.');}
-    if(openEmailOnLoad){openEmailOnLoad=false;if(!user||user.is_anonymous)openEmailDialog('signin');}
+    if(openEmailOnLoad){openEmailOnLoad=false;openEmailDialog('signin');}
     return;
   }
   sessionLoading = true;
@@ -1101,7 +1101,7 @@ async function setSession(session) {
   }
   entryConversationId = null;
   connectionText();
-  if(openEmailOnLoad){openEmailOnLoad=false;if(!user||user.is_anonymous)openEmailDialog('signin');}
+  if(openEmailOnLoad){openEmailOnLoad=false;openEmailDialog('signin');}
   if (user) {
     void flushOutbox();
     void wake();
