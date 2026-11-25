@@ -268,3 +268,10 @@ New chats use a neutral placeholder until completion; legacy chats update on the
 next completed answer. Invalid labels never get clipped or block a valid answer.
 Apply `202611250006_conversation_titles.sql` before deploying this worker; the
 five-argument completion RPC remains available for rolling deployments.
+
+
+Manual renaming uses `rename_conversation` and sets `title_is_manual`; apply
+`202611250007_manual_titles.sql` first. Later automatic titles respect that choice.
+Enter/Send queues each request separately while the AI is busy. The Queue view
+shows current/waiting/recent requests; the old batch-combine workflow is removed
+from the normal UI. Legacy unassigned prompts retain a recovery send action.

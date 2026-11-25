@@ -11,7 +11,7 @@ Kahuron is a conversation workspace for asking questions, collecting prompts and
 working with attached files. The user types or attaches material, sends it, reads
 the answer, reviews proposed edits, then downloads a separate edited copy.
 The conversation and composer are primary. History and files support that task.
-Queue details remain behind Batch. Do not turn the chat into a dashboard.
+Queue details remain behind Queue. Do not turn the chat into a dashboard.
 
 ## Visual direction
 
@@ -111,7 +111,7 @@ not scattered hex values. Do not use subtle separator tokens as focus indicators
 ## Before shipping a design change
 
 Check empty and populated conversations, a long answer, code/table overflow,
-multiple attachments, the file panel, Batch, and a completed edit review.
+multiple attachments, the file panel, Queue, and a completed edit review.
 Verify desktop, 390px mobile, short viewport/keyboard, keyboard focus, reduced
 motion and contrast preferences. Confirm no outer-page overflow, composer remains
 reachable, syncing does not move a reader's position, and review header/footer
@@ -157,3 +157,40 @@ atomically with a leased completion; no additional title API call is made.
 New chats retain "New conversation" until their first completed answer. Older
 chats acquire semantic titles on their next completed answer; do not spend extra
 provider calls to rename inactive history automatically.
+
+
+### Manual names and sequential messages
+
+Rename is in the saved conversation header. Its native dialog has a labelled
+120-character field, Cancel and Save title, inline errors and a pending state.
+Save only after the ownership-scoped RPC succeeds; connection failures leave the
+existing name intact. `conversations.title_is_manual` records the user's choice;
+automatic completion must never overwrite a manual name. No client-only flag
+may decide whether the server can rename a conversation.
+
+Each Enter or Send creates a distinct durable request immediately, including
+while an earlier answer is running. Queue displays waiting requests in FIFO
+order after the current answer. It never requires a separate compile action.
+Preserve Shift+Enter and IME-confirmation handling. A recovery-only Send saved
+messages action may appear for legacy unsent drafts. Do not expose batching or
+compilation terminology in the ordinary chat flow.
+
+
+### Answer actions
+
+Place Copy and Save .txt below each completed answer. Keep 44px touch targets,
+text labels, contextual accessible names, and visible/live success and failure
+feedback. Code blocks get a separate Copy code action in their header. Copy only
+rendered answer content or literal code; never include file-edit instructions,
+review controls or hidden metadata. Use Async Clipboard with guarded invoker
+commands/fallback; clipboard denial must show a recoverable error.
+
+Competitor references: ChatGPT's code blocks keep reusable code separate and
+copyable (https://help.openai.com/en/articles/20001246-working-with-writing-blocks-and-code-blocks-in-chatgpt).
+Gemini documents code copy/export and response refinement
+(https://support.google.com/gemini/answer/13275745?hl=en,
+https://support.google.com/gemini/answer/14262426?hl=en).
+Claude documents response feedback
+(https://support.claude.com/en/articles/8525154-claude-is-providing-incorrect-or-misleading-responses-what-s-going-on).
+Do not add feedback votes without a real destination or public sharing controls
+that bypass conversation ownership. Answer exports stay local and need no AI call.

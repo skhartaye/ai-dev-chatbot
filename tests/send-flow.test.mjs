@@ -64,6 +64,15 @@ for (const mode of ['send','failure','restore']) test(`Guest attachment flow: ${
       assert.deepEqual(Array.from(compile[0].args.p_prompt_ids),Array.from(intent.promptIds));
       assert.equal(w.sessionStorage.getItem('kahuron.send-after-sign-in'),null);
       assert.equal(w.document.querySelector('#workspace-name').textContent,'Guest workspace');
+      // Each subsequent Enter creates its own durable request, even before prior work completes.
+      input.value='Second queued prompt';enter({});
+      input.value='Third queued prompt';enter({});
+      await new Promise(resolve=>setTimeout(resolve,100));
+      const requests=w.calls.filter(c=>c.name==='compile_prompts');
+      assert.equal(requests.length,3);
+      assert.equal(new Set(requests.map(c=>c.args.p_id)).size,3);
+      assert.deepEqual(Array.from(requests,c=>c.args.p_prompt_ids.length),[1,1,1]);
+
     }
   } finally {dom.window.close();}
 });

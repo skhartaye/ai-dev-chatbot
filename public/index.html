@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#e5eee7" />
     <meta
       name="description"
-      content="Collect your prompts, keep your train of thought, and compile one considered answer."
+      content="Send messages while AI works. Each message is saved and answered in order."
     />
     <title>Workspace · Kahuron</title>
     <link
@@ -135,23 +135,34 @@
               <div>
                 <h1 id="conversation-title" tabindex="-1">New conversation</h1>
               </div>
-              <button
-                type="button"
-                class="icon-button"
-                id="export"
-                aria-label="Export conversation"
-                title="Export conversation"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  aria-hidden="true"
+              <div class="conversation-actions">
+                <button
+                  type="button"
+                  id="rename-conversation"
+                  class="text-button"
+                  title="Rename conversation"
+                  aria-label="Rename conversation"
                 >
-                  <path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" />
-                </svg>
-              </button>
+                  Rename
+                </button>
+                <button
+                  type="button"
+                  class="icon-button"
+                  id="export"
+                  aria-label="Export conversation"
+                  title="Export conversation"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" />
+                  </svg>
+                </button>
+              </div>
             </header>
 
             <div
@@ -272,7 +283,7 @@
                         aria-controls="compilation-dialog"
                         aria-expanded="false"
                       >
-                        Batch <span id="pending-open-count">0</span></button
+                        Queue <span id="pending-open-count">0</span></button
                       ><span class="shortcut"
                         ><kbd>Enter</kbd> to send · <kbd>Shift + Enter</kbd> for
                         a new line</span
@@ -424,32 +435,31 @@
     >
       <aside class="compilation-panel" aria-labelledby="compile-title">
         <div class="panel-heading">
-          <h2 id="compile-title">Compilation</h2>
+          <h2 id="compile-title">Message queue</h2>
           <button
             class="icon-button"
             type="button"
             data-close="compilation-dialog"
-            aria-label="Close compilation"
+            aria-label="Close message queue"
           >
             ×
           </button>
         </div>
         <div class="compile-summary">
           <span class="section-label"
-            >NEXT ANSWER
-            <span class="count-badge" id="pending-badge">0</span></span
+            >WAITING <span class="count-badge" id="pending-badge">0</span></span
           >
-          <h3 id="compile-summary-title">Your prompts, together.</h3>
+          <h3 id="compile-summary-title">No messages waiting.</h3>
           <p id="compile-summary-text">
-            Save a prompt to start building the context for your answer.
+            Each message runs automatically in order.
           </p>
           <ol
             class="pending-list"
             id="pending-list"
-            aria-label="Prompts for next compilation"
+            aria-label="Saved messages needing sending"
           ></ol>
           <button type="button" class="compile-button" id="compile">
-            Compile prompts
+            Send saved messages
             <svg
               viewBox="0 0 20 20"
               fill="none"
@@ -461,13 +471,10 @@
               <path d="M7 16h8a2 2 0 0 0 2-2V7" />
             </svg>
           </button>
-          <button id="add-to-batch" class="text-button" type="button">
-            Add draft to batch
-          </button>
           <p id="compile-error" class="field-error" hidden></p>
         </div>
         <div class="history-heading">
-          <h3>Previous compilations</h3>
+          <h3>Requests</h3>
           <span id="job-count">0</span>
         </div>
         <div id="job-list" class="job-list"></div>
@@ -481,7 +488,7 @@
           >
             <path d="M8 3h8l5 5v13H3V3h5m8 0v6h5M7 13h10M7 17h7" />
           </svg>
-          <p>No compilations yet</p>
+          <p>No requests yet</p>
         </div>
         <div class="model-note">
           <span class="section-label">SELECTED MODEL</span
@@ -495,6 +502,33 @@
       ><div class="noscript">Enable JavaScript to use Kahuron.</div></noscript
     >
 
+    <dialog id="rename-dialog" aria-labelledby="rename-title">
+      <h2 id="rename-title">Rename conversation</h2>
+      <form id="rename-form" action="/" method="post">
+        <label for="conversation-name">Conversation title</label>
+        <input
+          id="conversation-name"
+          name="conversation_title"
+          maxlength="120"
+          required
+          autocomplete="off"
+          autofocus
+          aria-describedby="rename-error"
+        />
+        <p id="rename-error" class="field-error" role="alert" hidden></p>
+        <div class="rename-actions">
+          <button type="button" class="text-button" data-close="rename-dialog">
+            Cancel</button
+          ><button
+            type="submit"
+            class="primary-button"
+            id="save-conversation-name"
+          >
+            Save title
+          </button>
+        </div>
+      </form>
+    </dialog>
     <dialog id="sign-in-dialog" aria-labelledby="sign-in-title">
       <button
         class="dialog-close icon-button"
@@ -538,7 +572,7 @@
       >
         ×</button
       ><span class="eyebrow">WORKFLOW EXAMPLE</span>
-      <h2 id="example-title">Think freely.<br />Compile deliberately.</h2>
+      <h2 id="example-title">Keep typing.<br />We’ll queue the rest.</h2>
       <p>
         This is an example of the connected workflow, not a live AI response.
       </p>

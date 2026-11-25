@@ -1908,3 +1908,102 @@ dialog > .text-button {
     line-clamp: unset;
   }
 }
+
+.conversation-header > div:first-child {
+  flex: 1;
+}
+.conversation-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+#rename-dialog {
+  padding: 28px;
+  inline-size: min(440px, calc(100% - 24px));
+}
+#rename-dialog h2 {
+  font-size: 1.4rem;
+  margin: 0 0 22px;
+  letter-spacing: -0.03em;
+}
+.rename-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-block-start: 8px;
+}
+
+.answer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-block-start: 14px;
+}
+.answer-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-block-size: 44px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.answer-action svg {
+  inline-size: 16px;
+  block-size: 16px;
+}
+.copy-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.copy-feedback {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.answer-action[data-failed] + .copy-feedback {
+  color: var(--error);
+}
+.answer-action[data-copied] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.code-sample {
+  min-inline-size: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.code-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--surface-soft);
+  border-radius: 11px 11px 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.answer-content .code-sample pre {
+  margin: 0;
+  border: 0;
+  border-block-start: 1px solid var(--line);
+  border-radius: 0 0 12px 12px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .answer-action:hover {
+    background: var(--surface-soft);
+    border-color: var(--line);
+    color: var(--accent);
+  }
+}

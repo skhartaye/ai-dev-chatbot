@@ -1,3 +1,5 @@
+import {appendAnswerActions} from "./answer-actions.js";
+import {requestQueue} from "./request-queue.js";
 import {createChatScroll} from "./chat-scroll.js";
 import { reveal } from "./motion.js";
 import { renderAnswer } from "./render-answer.js";
@@ -265,6 +267,8 @@ function render() {
   renderNav();
   $("#empty-state").hidden = c.prompts.length > 0;
   $(".conversation").classList.toggle("is-empty", c.prompts.length === 0);
+  $("#rename-conversation").disabled=!(user&&c.remote);
+  const queue=requestQueue(c.jobs);
   const list = $("#prompt-list");
   list.replaceChildren();
   const unassigned = pending(c);
@@ -289,8 +293,8 @@ function render() {
         p.syncing
           ? "Saving…"
           : isPending
-            ? "Next compilation"
-            : "Included in compilation",
+            ? "Not sent"
+            : ({complete:"Answered",processing:"Answering",failed:"Needs attention"}[c.jobs.find(j=>j.promptIds.includes(p.id))?.status]||"Queued"),
       ),
     );
     item.append(top, element("p", "prompt-content", p.content));
@@ -302,14 +306,11 @@ function render() {
     for (const job of c.jobs.filter((j) => j.promptIds.at(-1) === p.id))
       list.append(answerCard(job, c.jobs.indexOf(job),c));
   }
-  $("#pending-badge").textContent = unassigned.length;
-  $("#pending-open-count").textContent = unassigned.length;
-  $("#compile-summary-title").textContent = unassigned.length
-    ? `${unassigned.length} prompt${unassigned.length === 1 ? "" : "s"}. One answer.`
-    : "Your prompts, together.";
-  $("#compile-summary-text").textContent = unassigned.length
-    ? "Keep adding context, or compile these prompts together."
-    : "Save a prompt to start building the context for your answer.";
+  $("#pending-badge").textContent=queue.waiting.length;
+  $("#pending-open-count").textContent=queue.waiting.length;
+  $("#compile").hidden=!unassigned.length;
+  $("#compile-summary-title").textContent=unassigned.length?"Saved messages need sending":queue.processing?"AI is answering":queue.waiting.length?`${queue.waiting.length} message${queue.waiting.length===1?"":"s"} waiting`:"No messages waiting";
+  $("#compile-summary-text").textContent=unassigned.length?"Send these previously saved messages to resume.":"Each Enter queues a separate request. Waiting messages run automatically, in order.";
   $("#pending-list").replaceChildren();
   for (const p of unassigned) {
     const item = element("li");
@@ -326,19 +327,20 @@ function render() {
   $("#job-count").textContent = c.jobs.length;
   $("#no-jobs").hidden = c.jobs.length > 0;
   $("#job-list").replaceChildren();
-  for (const [index, job] of c.jobs.entries()) {
+  for (const job of queue.ordered) {
+    const index=c.jobs.indexOf(job);
     const card = element("article", "job-card");
     card.append(
       element("span", "job-status", jobLabel(job)),
       element(
         "h4",
         "",
-        `Compilation ${index + 1} · ${job.promptIds.length} prompt${job.promptIds.length === 1 ? "" : "s"}`,
+        `Request ${index + 1} · ${job.promptIds.length} prompt${job.promptIds.length === 1 ? "" : "s"}`,
       ),
       element("p", "", jobMessage(job)),
     );
     if (job.status === "failed") {
-      const retry = element("button", "text-button", "Retry compilation");
+      const retry = element("button", "text-button", "Retry request");
       retry.type = "button";
       retry.addEventListener("click", async () => {
         retry.disabled = true;
@@ -358,7 +360,7 @@ function render() {
       const recover = element(
         "button",
         "text-button",
-        "Keep prompts uncompiled",
+        "Keep messages unsent",
       );
       recover.type = "button";
       recover.addEventListener("click", () => {
@@ -375,7 +377,7 @@ function render() {
     const time = element("time", "", formatTime(job.createdAt));
     time.dateTime = new Date(job.createdAt).toISOString();
     card.append(time);
-    $("#job-list").prepend(card);
+    $("#job-list").append(card);
   }
   connectionText();
   chatScroll.afterRender();
@@ -472,20 +474,18 @@ $("#attach-files").addEventListener("change", async (event) => {
     $("#file-errors").hidden = !errors.length;
   }
 });
+let lastCompositionEndAt=null;
+$("#prompt").addEventListener("compositionend",event=>{lastCompositionEndAt=event.timeStamp;});
 $("#prompt").addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
-    if (event.isComposing || event.keyCode === 229) return;
+    if (event.isComposing || event.keyCode === 229 || lastCompositionEndAt!==null&&Math.abs(event.timeStamp-lastCompositionEndAt)<50) return;
     $("#prompt-form").requestSubmit();
   }
 });
 $("#prompt-form").addEventListener("submit", (event) => {
   event.preventDefault();
   savePrompt(true);
-});
-$("#add-to-batch").addEventListener("click", () => {
-  $("#compilation-dialog").close();
-  savePrompt(false);
 });
 function savePrompt(send) {
   const input = $("#prompt");
@@ -521,7 +521,7 @@ function savePrompt(send) {
         60000)
   ) {
     $("#prompt-error").textContent =
-      "Compile your saved prompts first. Each batch supports 100 prompts and 60,000 characters.";
+      "Send your saved messages first. A request supports 100 saved messages and 60,000 characters.";
     $("#prompt-error").hidden = false;
     input.setAttribute("aria-invalid", "true");
     return;
@@ -537,10 +537,7 @@ function savePrompt(send) {
     outbox.push({
       type: "prompt",
       conversationId: c.id,
-      title:
-        c.remote || c.prompts.length
-          ? c.title
-          : c.title,
+      title:c.title,
       prompt,
     });
   c.prompts.push(prompt);
@@ -574,16 +571,16 @@ async function queueCompilation() {
   if (startingGuest) return;
   if (sessionLoading) return;
   if (staleTab) {
-    announce("Reload this tab before compiling.");
+    announce("Reload this tab before sending.");
     return;
   }
   const c = current();
   const prompts = pending(c);
   if (!prompts.length) {
     $("#compile-error").textContent =
-      "Save a prompt first, then compile it here.";
+      "Type a message and press Enter.";
     $("#compile-error").hidden = false;
-    announce("Save a prompt first, then compile it here.");
+    announce("Type a message and press Enter.");
     $("#prompt").focus();
     return;
   }
@@ -625,7 +622,7 @@ async function queueCompilation() {
   reveal($("#job-list").firstElementChild);
   if (saved) {
     void flushOutbox();
-    announce("Compilation queued. You can keep adding prompts.");
+    announce("Message queued. It will run automatically in order.");
   }
 }
 for (const button of document.querySelectorAll("[data-starter]"))
@@ -637,6 +634,23 @@ for (const button of document.querySelectorAll("[data-starter]"))
     input.dispatchEvent(new Event("input"));
     input.focus();
   });
+let renamingId;
+$("#rename-conversation").addEventListener("click",()=>{
+  const c=current();if(!user||!c?.remote)return;
+  renamingId=c.id;$("#conversation-name").value=c.title;$("#rename-error").hidden=true;
+  $("#rename-dialog").showModal();$("#conversation-name").select();
+});
+$("#rename-form").addEventListener("submit",async event=>{
+  event.preventDefault();const name=$("#conversation-name").value.trim().replace(/\s+/g," ");
+  if(!name||Array.from(name).length>120){$("#rename-error").textContent="Use a title between 1 and 120 characters.";$("#rename-error").hidden=false;$("#conversation-name").focus();return;}
+  const id=renamingId,save=$("#save-conversation-name");save.disabled=true;save.textContent="Saving…";
+  try{
+    const savedTitle=await rpc("rename_conversation",{p_id:id,p_title:name});
+    const c=state.conversations.find(c=>c.id===id);if(c)c.title=savedTitle;
+    persist();render();$("#rename-dialog").close();announce("Conversation renamed. Automatic naming will keep your title.");
+  }catch{$("#rename-error").textContent="Could not save the title. Reconnect and try again.";$("#rename-error").hidden=false;}
+  finally{save.disabled=false;save.textContent="Save title";}
+});
 $("#export").addEventListener("click", () => {
   const c = current();
   const blob = new Blob(
@@ -692,16 +706,16 @@ const examples = {
   queued: [
     "Queued",
     "Your prompts are saved.",
-    "Your compilation will start when capacity is available.",
+    "Your message will run automatically when capacity is available.",
   ],
   processing: [
     "Processing",
     "An answer is taking shape.",
-    "You can keep adding prompts. New prompts will go into the next compilation.",
+    "Press Enter while AI is answering to queue the next message.",
   ],
   complete: [
     "Complete",
-    "Your compiled answer",
+    "Your answer",
     "Example: Start with a small feature, define its acceptance criteria, and implement the smallest complete workflow.",
   ],
   error: [
@@ -766,7 +780,7 @@ if (storageError) announce(storageError);
 function jobLabel(job) {
   return (
     {
-      syncing: "Saving compilation…",
+      syncing: "Saving message…",
       queued:
         job.errorCode === "rate_limit"
           ? "Waiting for AI quota"
@@ -776,36 +790,36 @@ function jobLabel(job) {
       processing: "Generating answer…",
       complete: "Complete",
       failed: "Needs attention",
-    }[job.status] || "Local compilation"
+    }[job.status] || "Not synced"
   );
 }
 function jobMessage(job) {
   if (job.status === "complete") return "Answer saved in your workspace.";
   if (job.status === "processing")
-    return "Keep adding prompts. They will go into the next compilation.";
+    return "Keep typing. Press Enter to queue the next message.";
   if (job.status === "failed")
     return job.errorCode === "context_limit"
       ? "This conversation is too long. Start a new conversation with the context you need."
       : job.errorCode === "output_limit"
         ? "The answer exceeded the output limit. Start a new conversation with a smaller task. Your prompts are still saved here."
-        : "Your prompts are safe. Retry this compilation when the service is available.";
+        : "Your prompts are safe. Retry this request when the service is available.";
   if (job.status === "queued")
     return job.errorCode
       ? `Your prompts are saved. Next attempt after ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(job.availableAt))}.`
       : "Saved in your workspace. Processing starts when capacity is available.";
-  return "Waiting to sync. Keep this browser open until the compilation is saved online.";
+  return "Waiting to sync. Keep this browser open until the request is saved online.";
 }
 function answerCard(job, index,c) {
   const item = element("li", "answer-card");
   item.dataset.messageId=job.id;
   item.append(
-    element("strong", "answer-heading", `Kahuron · Compilation ${index + 1}`),
+    element("strong", "answer-heading", `Kahuron · Answer ${index + 1}`),
     element("span", "job-status", jobLabel(job)),
   );
   if (job.answer) {
     const answer = element("div", "answer-content", job.answer);
     item.append(answer);
-    void renderAnswer(answer, job.answer,{files:c.prompts.flatMap(p=>p.attachments||[])}).catch(() => {
+    void renderAnswer(answer, job.answer,{files:c.prompts.flatMap(p=>p.attachments||[])}).then(()=>appendAnswerActions(item,answer,{number:index+1,title:c.title})).catch(() => {
       answer.textContent = job.answer;
     });
   } else item.append(element("p", "", jobMessage(job)));
@@ -916,6 +930,7 @@ async function refreshCloud() {
   refreshing = true;
   const generation = cloudGeneration;
   const selected = current();
+  const previousTitle=selected?.title;
   try {
     const conversations = await listConversations();
     if (generation !== cloudGeneration) return;
@@ -938,7 +953,7 @@ async function refreshCloud() {
       mergeOutbox();
       if (
         current()?.id === selected.id &&
-        signature !== JSON.stringify([selected.prompts, selected.jobs])
+        (signature !== JSON.stringify([selected.prompts, selected.jobs])||selected.title!==previousTitle)
       )
         render();
     }
